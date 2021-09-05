@@ -126,11 +126,12 @@ class Articles(commands.Cog):
         Set a specific type of news to be sent on a channel.
         If this command is called without any argument, it show's all the channel this server is attached to.
         """
-        channels: Dict[int, Dict[int, Tuple[int, int, int]]] = dict(await self.bot.db.items())
+        channels: Dict[str, Dict[str, Tuple[int, int, int]]] = dict(await self.bot.db.items())
         guild: Guild = ctx.guild
         to_render = set()
         for key, value in _channel_dict.items():
             channel = channels[str(key)].get(str(guild.id))
+            print(channels[str(key)])
             if channel:
                 channel = guild.get_channel(channel[0])
                 channel = channel.mention
