@@ -131,7 +131,6 @@ class Articles(commands.Cog):
         to_render = set()
         for key, value in _channel_dict.items():
             channel = channels[str(key)].get(str(guild.id))
-            print(channels[str(key)], guild.id)
             if channel:
                 channel = guild.get_channel(channel[0])
                 channel = channel.mention
