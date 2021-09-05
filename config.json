@@ -1,0 +1,13 @@
+{
+    "prefix": "GN",
+    "ext_dir": "ext",
+    "debug": true,
+    "ext": [
+        "help",
+        "articles",
+        "errors"
+    ],
+    "owners": [
+        830248412904947753
+    ]
+}
