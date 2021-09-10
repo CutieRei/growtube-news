@@ -25,7 +25,7 @@ class ErrorHandler(commands.Cog):
             error: MissingRequiredArgument
             await ctx.send(f"Missing required argument {error.param}")
         
-        elif isinstance(error, (CommandNotFound, BCommandNotFound):
+        elif isinstance(error, CommandNotFound):
             error: CommandNotFound
             msg = ctx.message.content.replace(ctx.prefix, "")
             await ctx.send("No command named `{}`".format(msg))
