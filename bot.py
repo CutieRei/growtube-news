@@ -22,22 +22,13 @@ class GrowTube(commands.Bot):
 
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
-        self.db = DB()
+        self.db = storage.AsyncReplitStorage()
     
     async def close(self):
         await asyncio.gather(self.db.close(), super().close())
 
 class NotPermittedForPublish(commands.CheckFailure):
     pass
-
-class CommandNotFound(Exception):
-
-    def __init__(self, obj, msg = "Command not found"):
-        self.msg = msg
-        self.obj = obj
-
-    def __str__(self):
-        return self.msg 
 
 def get_bot():
     
