@@ -1,18 +1,31 @@
 import asyncio
 import fastapi
-from bot import get_bot
+import importlib
+import bot as bot_m
 
 app = fastapi.FastAPI()
 config = {
-    "app": app
+    "app": app,
+    "bot": None
 }
 
 @app.on_event("startup")
 async def startup():
-    bot, token = get_bot()
+    importlib.reload(bot_m)
+    bot, token = bot_m.get_bot()
+    config["bot"] = bot
     bot.config = config
     asyncio.create_task(bot.start(token))
     await bot.wait_until_ready()
+
+@app.post("/restart")
+async def restart(token: str):
+    bot = config["bot"]
+    if not token == bot.http.token:
+        return {"status": 401, "msg": "Unauthorized"}
+    await bot.close()
+    await startup()
+    return {"status": 200, "msg": "Ok"}
 
 @app.get("/ping")
 def ping():

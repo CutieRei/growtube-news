@@ -1,4 +1,5 @@
 from bot import NotPermittedForPublish
+from bot import CommandNotFound as BCommandNotFound
 from discord.ext import commands
 from discord.ext.commands.errors import CommandNotFound, MissingRequiredArgument, NoPrivateMessage
 import traceback
@@ -24,9 +25,10 @@ class ErrorHandler(commands.Cog):
             error: MissingRequiredArgument
             await ctx.send(f"Missing required argument {error.param}")
         
-        elif isinstance(error, CommandNotFound):
+        elif isinstance(error, (CommandNotFound, BCommandNotFound):
             error: CommandNotFound
-            await ctx.send("No command named `{}`".format(ctx.message.content.replace(ctx.prefix, "")))
+            msg = getattr(error, "obj", ctx.message.content.replace(ctx.prefix, ""))
+            await ctx.send("No command named `{}`".format(msg))
         
         elif isinstance(error, (NoPrivateMessage, NotPermittedForPublish)):
             return

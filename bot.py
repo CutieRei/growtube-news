@@ -2,7 +2,7 @@ import storage
 from discord.ext import commands
 import os
 import json
-from asyncio import gather
+import asyncio
 
 class DB(storage.MockAsyncReplitStorage):
 
@@ -22,13 +22,22 @@ class GrowTube(commands.Bot):
 
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
-        self.db = storage.AsyncReplitStorage()
+        self.db = DB()
     
     async def close(self):
-        await gather(self.db.close(), super().close())
+        await asyncio.gather(self.db.close(), super().close())
 
 class NotPermittedForPublish(commands.CheckFailure):
     pass
+
+class CommandNotFound(Exception):
+
+    def __init__(self, obj, msg = "Command not found"):
+        self.msg = msg
+        self.obj = obj
+
+    def __str__(self):
+        return self.msg 
 
 def get_bot():
     
@@ -60,6 +69,18 @@ def get_bot():
     @bot.listen()
     async def on_ready():
         print("Logged in")
+
+    import aiohttp
+
+    async def _job():
+        async with aiohttp.ClientSession() as sess:
+            await sess.post("http://localhost:8000/restart", params={"token": bot.http.token})
+
+    @bot.command()
+    @commands.is_owner()
+    async def restart(ctx):
+        await ctx.message.add_reaction("\U00002705")
+        asyncio.create_task(_job())
         
     return bot, token
 
