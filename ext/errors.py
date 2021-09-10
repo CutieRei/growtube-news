@@ -26,7 +26,7 @@ class ErrorHandler(commands.Cog):
         
         elif isinstance(error, CommandNotFound):
             error: CommandNotFound
-            await ctx.send("No command named `{}`".format(ctx.message.content.removeprefix(ctx.prefix)))
+            await ctx.send("No command named `{}`".format(ctx.message.content.replace(ctx.prefix, "")))
         
         elif isinstance(error, (NoPrivateMessage, NotPermittedForPublish)):
             return
