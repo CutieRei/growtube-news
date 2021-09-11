@@ -33,6 +33,7 @@ class NotPermittedForPublish(commands.CheckFailure):
 def get_bot():
     
     config = None
+    config_file = "config.json" if os.path.isfile("config.json") else "default-config.json"
     with open("config.json") as f:
         config = json.load(f)
     

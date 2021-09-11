@@ -33,7 +33,7 @@ class Help(commands.HelpCommand):
                 valid_commands[key] = _commands
         embed = discord.Embed(
             title = "List of commands and categories",
-            description = "\n".join("**{}**\n{}".format("Uncategorized" if key is None else key.qualified_name, "\n".join(i.name for i in value)) for key, value in valid_commands.items()),
+            description = "\n".join("**{}**\n{}".format("Uncategorized" if key is None else key.qualified_name, ("\n".join(i.name for i in value))+"\n") for key, value in valid_commands.items()),
             color = embed_color,
             timestamp=datetime.datetime.utcnow()
         )
