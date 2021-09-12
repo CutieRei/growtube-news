@@ -19,7 +19,7 @@ async def startup():
     await bot.wait_until_ready()
 
 @app.post("/restart")
-async def restart(token: str):
+async def restart(token: str = fastapi.Form(...)):
     bot = config["bot"]
     if not token == bot.http.token:
         return {"status": 401, "msg": "Unauthorized"}

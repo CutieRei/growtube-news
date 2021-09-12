@@ -66,7 +66,7 @@ def get_bot():
 
     async def _job():
         async with aiohttp.ClientSession() as sess:
-            await sess.post("http://localhost:8000/restart", params={"token": bot.http.token})
+            await sess.post("http://localhost:8000/restart", data={"token": bot.http.token})
 
     @bot.command()
     @commands.is_owner()
