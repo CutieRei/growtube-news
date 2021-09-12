@@ -20,10 +20,12 @@ class DB(storage.MockAsyncReplitStorage):
 class GrowTube(commands.Bot):
 
     db: storage.AsyncReplitStorage
+    CHANNEL_LOG = 883936874400452619
 
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         self.db = storage.AsyncReplitStorage()
+
     
     async def close(self):
         await asyncio.gather(self.db.close(), super().close())
@@ -49,11 +51,13 @@ def get_bot():
         command_prefix = config["prefix"],
         owner_ids = config["owners"]
     )
-    bot.CHANNEL_LOG = 883936874400452619
 
     async def _ext_err(e: Exception):
         await bot.wait_until_ready()
-        traceback.print_exception(type(e), e, e.__traceback__)
+        exc = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        channel = bot.get_channel(bot.CHANNEL_LOG)
+        if channel:
+            await channel.send(f"```py\n{exc}\n```")
 
     for extension in config["ext"]:
         try:
