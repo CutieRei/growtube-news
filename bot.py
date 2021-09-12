@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 import json
 import asyncio
+import traceback
 
 class DB(storage.MockAsyncReplitStorage):
 
@@ -48,12 +49,17 @@ def get_bot():
         command_prefix = config["prefix"],
         owner_ids = config["owners"]
     )
+    bot.CHANNEL_LOG = 883936874400452619
+
+    async def _ext_err(e: Exception):
+        await bot.wait_until_ready()
+        traceback.print_exception(type(e), e, e.__traceback__)
 
     for extension in config["ext"]:
         try:
             bot.load_extension(config["ext_dir"]+"."+extension)
-        except Exception:
-            pass
+        except Exception as exc:
+            asyncio.create_task(_ext_err(exc))
 
     if config["debug"]:
         bot.load_extension("jishaku")

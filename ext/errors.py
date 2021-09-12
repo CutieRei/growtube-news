@@ -1,11 +1,8 @@
 from bot import NotPermittedForPublish
-from bot import CommandNotFound as BCommandNotFound
 from discord.ext import commands
 from discord.ext.commands.errors import CommandNotFound, MissingRequiredArgument, NoPrivateMessage
 import traceback
 import datetime
-
-CHANNEL_LOG = 883936874400452619
 
 class ErrorHandler(commands.Cog):
 
@@ -36,10 +33,11 @@ class ErrorHandler(commands.Cog):
         else:
             tb = traceback.format_exception(type(error), error, error.__traceback__)
             bot: commands.Bot = ctx.bot
-            channel = bot.get_channel(CHANNEL_LOG)
+            channel = bot.get_channel(ctx.bot.CHANNEL_LOG)
             if channel:
                 return await channel.send("command: `{}`\nauthor: `{}`\nwhen: <t:{}:F>\n```py\n{}```".format(ctx.command.qualified_name, ctx.author, int(datetime.datetime.utcnow().timestamp()), "".join(tb)))
 
 
 def setup(bot):
     bot.add_cog(ErrorHandler())
+    print("Loaded errors")

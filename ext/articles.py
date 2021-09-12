@@ -1,4 +1,5 @@
 import aiohttp
+import discord
 from discord.ext import commands
 import datetime
 from typing import Dict, Optional, Tuple
@@ -15,6 +16,7 @@ def from_hex(string):
     string = string.replace("#", "0x")
     return Color(int(string, 16))
 emoji_url = "https://cdn.discordapp.com/emojis/803865449694494742.png"
+embed_color = discord.Color(15007744)
 
 class Channel:
     category1 = 0
@@ -30,7 +32,7 @@ _channel_dict = {
 embed_color = Color(15007744)
 
 admin_id = 877549553153376306
-news_types = {
+news_types: Dict[str, Tuple[str, Color, int]] = {
     "growtopia news": ("Growtopia News", from_hex("#239e1b"), Channel.category1),
     "growtopia announcement": ("Growtopia Announcement", from_hex("#67e85f"), Channel.category1),
     "growtube announcement": ("Growtube Announcement", from_hex("#ffffff"), Channel.category1),
@@ -41,11 +43,13 @@ news_types = {
     "suggestions": ("Community Suggestions", from_hex("#0a22f7"), Channel.category3)
 }
 
-server_status = {
+server_status: Dict[str, Tuple[str, str, Color]] = {
     "Online": ("Server is online", "<:gtonline:874224931188146216>", Color.green()),
     "Maintenance": ("Server is on maintenance", "<:gtbusy:874224931230060604>", Color.red()),
     "Extended Maintenance": ("The maintenance is extended", "<:gtaway:874224931389472778>", Color.gold())
 }
+
+color = discord.ButtonStyle.gray
 
 class QuitError(Exception):
     
@@ -56,7 +60,7 @@ class QuitError(Exception):
     def __str__(self):
         return self.msg
 
-async def message_wait(ctx, predicate, input, msg="Invalid value!"):
+async def message_wait(ctx, predicate, input, msg="Invalid value!") -> discord.Message:
     bot: GrowTube = ctx.bot
     await ctx.send(input+". Enter `cancel` to exit.")
     while True:
@@ -112,12 +116,62 @@ def check(ctx: commands.Context):
         raise NotPermittedForPublish("You are not permitted to access the news configuration!")
     return True
 
+class ServerView(discord.ui.View):
+
+    def __init__(self, *, timeout: Optional[float] = None) -> None:
+        super().__init__(timeout=timeout)
+        self.type = None
+    
+    @discord.ui.button(label="Online", style=color)
+    async def online(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
+        self.type = ("Online", server_status["Online"])
+        self.stop()
+    
+    @discord.ui.button(label="Maintenance", style=color)
+    async def maintenance(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
+        self.type = ("Maintenance", server_status["Maintenance"])
+        self.stop()
+    
+    @discord.ui.button(label="Extended Maintenance", style=color)
+    async def extended_maintenance(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
+        self.type = ("Extended Maintenance", server_status["Extended Maintenance"])
+        self.stop()
+
+
 class Articles(commands.Cog):
 
     bot: GrowTube
 
     def __init__(self, bot: GrowTube) -> None:
         self.bot = bot
+    
+    @commands.command()
+    @commands.check(check)
+    async def maintenance(self, ctx):
+        
+        sview = ServerView(timeout=60)
+        embed = Embed(
+            color = embed_color,
+            description = "What's the status of the server?"
+        )
+        await ctx.send(embed=embed, view=sview)
+        await sview.wait()
+        stype = sview.type[1]
+        if stype is None:
+            return await ctx.send("I waited for too long!")
+        try:
+            msg = await message_wait(ctx, None, "Insert a description")
+        except QuitError as e:
+            return await e.message.add_reaction("✅")
+
+        embed = Embed(
+            color = stype[2],
+            description = msg.content,
+            timestamp = datetime.datetime.utcnow()
+        )
+        embed.set_author(name=stype[0], icon_url="https://cdn.discordapp.com/emojis/{}".format(stype[1].split(":")[-1].replace(">", "")))
+        embed.set_footer(text=f"Growtube News | Published by {ctx.author}", icon_url=emoji_url)
+        await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True)
     @commands.check(check)
@@ -225,58 +279,7 @@ class Articles(commands.Cog):
             tasks.append(broadcast(chtype, ctx, content))
         await asyncio.gather(*tasks, confirmation.add_reaction("✅"))
 
-# TODO: use verbose date specifications instead of just time due to synchronization issue
-@commands.command()
-@commands.guild_only()
-async def _maintenance(ctx, *, description: Optional[str] = None):
-    embed = Embed(
-        title = "Choose server status",
-        description = "\n".join([
-            f"{value[1]}: {key}" for key, value in server_status.items()
-        ])
-    )
-    msg = await ctx.send(embed=embed)
-    await asyncio.gather(*[msg.add_reaction(value[1]) for value in server_status.values()])
-    reaction, _ = await ctx.bot.wait_for("reaction_add", check=(lambda r,m: m == ctx.author))
-    item = None
-    for key, value in server_status.items():
-        if value[1] == str(reaction):
-            item = (key, value)
-            break
 
-    def _parse_time(x):
-        try:
-            return datetime.datetime.strptime(x.content, "%H:%M")
-        except Exception as e:
-            return False
-    
-    try:
-        time = await message_wait(ctx, _parse_time, "When did it start? (`HOUR:MINUTE` format in Growtopia time)")
-    except QuitError as e:
-        await e.message.add_reaction("👍")
-    
-    await ctx.send("Are you sure? (yes | no)")
-    msg = await ctx.bot.wait_for("message", check = lambda x: x.author == ctx.author and x.channel == ctx.channel and x.content.lower() in ["yes", "no"])
-    if msg.content.lower() == "no":
-        await msg.add_reaction("👍")
-        return
-    embed = Embed(
-        color = item[1][2]
-    )
-    if description:
-        embed.description = description
-
-    time = time.content.split(":")
-    time = get_time().replace(
-        hour = int(time[0]),
-        minute = int(time[1])
-    ).strftime("%H:%M")
-    embed.set_author(
-        icon_url = "https://cdn.discordapp.com/emojis/"+item[1][1].split(":")[-1].strip(">"),
-        name = item[1][0] + f" | {time} Growtopia Time"
-    )
-    embed.set_footer(icon_url = emoji_url, text = f"Growtube News | Published by {ctx.author}")
-    await broadcast(Channel.category1, ctx, embed=embed)
 
 def setup(bot: commands.Bot):
     bot.add_cog(Articles(bot))
