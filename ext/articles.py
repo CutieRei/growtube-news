@@ -128,20 +128,20 @@ class ServerView(discord.ui.View):
     
     @discord.ui.button(label="Online", style=color)
     async def online(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
-        self.type = ("Online", server_status["Online"])
         if self.view_check(interaction):
+            self.type = ("Online", server_status["Online"])
             self.stop()
     
     @discord.ui.button(label="Maintenance", style=color)
     async def maintenance(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
-        self.type = ("Maintenance", server_status["Maintenance"])
         if self.view_check(interaction):
+            self.type = ("Maintenance", server_status["Maintenance"])
             self.stop()
     
     @discord.ui.button(label="Extended Maintenance", style=color)
     async def extended_maintenance(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
-        self.type = ("Extended Maintenance", server_status["Extended Maintenance"])
         if self.view_check(interaction):
+            self.type = ("Extended Maintenance", server_status["Extended Maintenance"])
             self.stop()
 
 
@@ -163,14 +163,14 @@ class Articles(commands.Cog):
         )
         await ctx.send(embed=embed, view=sview)
         await sview.wait()
-        stype = sview.type[1]
+        stype = sview.type
         if stype is None:
             return await ctx.send("I waited for too long!")
         try:
             msg = await message_wait(ctx, None, "Insert a description")
         except QuitError as e:
             return await e.message.add_reaction("✅")
-
+        stype = stype[1]
         embed = Embed(
             color = stype[2],
             description = msg.content,
