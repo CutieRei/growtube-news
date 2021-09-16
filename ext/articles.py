@@ -178,7 +178,7 @@ class Articles(commands.Cog):
         )
         embed.set_author(name=stype[0], icon_url="https://cdn.discordapp.com/emojis/{}".format(stype[1].split(":")[-1].replace(">", "")))
         embed.set_footer(text=f"Growtube News | Published by {ctx.author}", icon_url=emoji_url)
-        await ctx.send(embed=embed)
+        await broadcast(Channel.category1, ctx, embed=embed)
 
     @commands.group(invoke_without_command=True)
     @commands.check(check)
