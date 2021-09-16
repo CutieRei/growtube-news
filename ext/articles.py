@@ -118,24 +118,31 @@ def check(ctx: commands.Context):
 
 class ServerView(discord.ui.View):
 
-    def __init__(self, *, timeout: Optional[float] = None) -> None:
+    def __init__(self, ctx: commands.Context, *, timeout: Optional[float] = None) -> None:
         super().__init__(timeout=timeout)
         self.type = None
+        self.ctx = ctx
+
+    def view_check(self, i: discord.Interaction):
+        return self.ctx.author == i.user
     
     @discord.ui.button(label="Online", style=color)
     async def online(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
         self.type = ("Online", server_status["Online"])
-        self.stop()
+        if self.view_check(interaction):
+            self.stop()
     
     @discord.ui.button(label="Maintenance", style=color)
     async def maintenance(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
         self.type = ("Maintenance", server_status["Maintenance"])
-        self.stop()
+        if self.view_check(interaction):
+            self.stop()
     
     @discord.ui.button(label="Extended Maintenance", style=color)
     async def extended_maintenance(self, button: discord.ui.Button, interaction: discord.Interaction) -> None:
         self.type = ("Extended Maintenance", server_status["Extended Maintenance"])
-        self.stop()
+        if self.view_check(interaction):
+            self.stop()
 
 
 class Articles(commands.Cog):
@@ -149,7 +156,7 @@ class Articles(commands.Cog):
     @commands.check(check)
     async def maintenance(self, ctx):
         
-        sview = ServerView(timeout=60)
+        sview = ServerView(ctx, timeout=60)
         embed = Embed(
             color = embed_color,
             description = "What's the status of the server?"
