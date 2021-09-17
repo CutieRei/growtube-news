@@ -50,7 +50,8 @@ class Help(commands.HelpCommand):
         embed = discord.Embed(
             title = f"Help for {cog.qualified_name}",
             description = cog.description or "No description",
-            color = embed_color
+            color = embed_color,
+            timestamp = datetime.datetime.utcnow()
         )
         embed.add_field(name="commands", value=", ".join((i.qualified_name for i in valid_commands)))
 
