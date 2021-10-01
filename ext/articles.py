@@ -112,9 +112,9 @@ async def _setchannel(ctx, chtype, channel_id, webhook_id) -> bool:
 def check(ctx: commands.Context):
     if not ctx.guild:
         raise NoPrivateMessage()
-    elif not (ctx.author.guild_permissions.manage_channels or ctx.author.get_role(admin_id)):
-        raise NotPermittedForPublish("You are not permitted to access the news configuration!")
-    return True
+    elif ctx.author.get_role(admin_id):
+        return True
+    raise NotPermittedForPublish("You are not permitted to access the news configuration!")
 
 class ServerView(discord.ui.View):
 
