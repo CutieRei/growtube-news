@@ -225,10 +225,12 @@ class Articles(commands.Cog):
             return await ctx.send("Webhook not found!")
         await ctx.send(f"Successfully set contest news channel to {channel.mention}")
 
-    @setchannel.command()
-    async def community(self, ctx, channel: TextChannel, webhook: Optional[int] = None):
+    @setchannel.command(name="growtopia-community", aliases=["community", "gt-community"])
+    async def growtopia_community(self, ctx, channel: TextChannel, webhook: Optional[int] = None):
         """
         Set Growtopia Community `Forums, Guidebook, Suggestions` news to be sent to this channel.
+
+        The alias 'community' is deprecated please migrate any automation to 'growtopia-community' or 'gt-community'
         """
         if not await _setchannel(ctx, Channel.category3, channel.id, webhook):
             return await ctx.send("Webhook not found!")
