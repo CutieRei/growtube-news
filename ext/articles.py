@@ -116,6 +116,14 @@ def check(ctx: commands.Context):
         return True
     raise NotPermittedForPublish("You are not permitted to access the news configuration!")
 
+def check_channel(ctx: commands.Context):
+    try:
+        return check(ctx)
+    except NotPermittedForPublish:
+        if ctx.channel.permissions_for(ctx.author).manage_channels:
+            return True
+    return False
+
 class ServerView(discord.ui.View):
 
     def __init__(self, ctx: commands.Context, *, timeout: Optional[float] = None) -> None:
@@ -181,7 +189,7 @@ class Articles(commands.Cog):
         await broadcast(Channel.category1, ctx, embed=embed)
 
     @commands.group(invoke_without_command=True)
-    @commands.check(check)
+    @commands.check(check_channel)
     async def setchannel(self, ctx: commands.Context):
         """
         Set a specific type of news to be sent on a channel.
