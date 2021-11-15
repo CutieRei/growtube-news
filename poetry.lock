@@ -501,10 +501,14 @@ python-versions = ">=3.6"
 idna = ">=2.0"
 multidict = ">=4.0"
 
+[extras]
+pg = ["asyncpg"]
+replit = ["replit"]
+
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "1a455bb36655ed501c7ec64a67751d83d2aa2334baf976db018ec6922b0dbd10"
+content-hash = "db507a3a38d6b5ba83f2efa8aba615c356f55aaa75d94a51981d6dea17833488"
 
 [metadata.files]
 aiohttp = [

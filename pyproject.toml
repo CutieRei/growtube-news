@@ -21,11 +21,11 @@ replit = { version = "3.2.4", optional = true }
 asyncpg = { version = "0.24.0", optional = true }
 python-multipart = "0.0.5"
 
-[took.poetry.extras]
-replit = ["replit"]
-psql = ["asyncpg"]
-
 [tool.poetry.dev-dependencies]
+
+[tool.poetry.extras]
+replit = ["replit"]
+pg = ["asyncpg"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
