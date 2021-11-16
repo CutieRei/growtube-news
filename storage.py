@@ -5,7 +5,7 @@ try:
 except ImportError:
     _HAS_REPLIT = False
     
-from typing import Any, Dict, Optional, Awaitable, List
+from typing import Any, Dict, Optional, Awaitable, List, Iterator
 
 try:
     import asyncpg
@@ -187,8 +187,12 @@ if _HAS_ASYNCPG:
             i["type"]: Channel(i["channel"], i["webhook"], i["token"]) for i in records
                 }
         
-        def __getitem__(self, k: int):
+        def __getitem__(self, k: int) -> Optional[Channel]:
             return self._items.get(k)
+        
+        def __iter__(self) -> Iterator[Optional[Channel]]:
+            for i in range(3):
+                yield self._items.get(i)
             
     class PostgresStorage:
         
@@ -227,4 +231,7 @@ if _HAS_ASYNCPG:
             await self._pool.execute("""
                 UPDATE channels SET channel = $1, webhook = $2, token = $3 WHERE guild = $4 AND type = $5
                 """, channel.channel, channel.webhook, channel.token, guild_id, channel_type)
+        
+        async def get_channels(self, channel_type: int) -> List[Channel]:
+            return [Channel(i["channel"], i["webhook"], i["token"]) for i in await self._pool.fetch("SELECT * FROM channels WHERE type = $1", channel_type)]
     

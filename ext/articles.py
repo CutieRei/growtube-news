@@ -1,16 +1,13 @@
 import aiohttp
 import discord
-from discord.ext import commands
 import datetime
-from typing import Dict, Optional, Tuple
-from discord.ext.commands.errors import NoPrivateMessage
-from discord.webhook.async_ import Webhook
-import humanize
 import asyncio
-from discord import Embed, Color, TextChannel, Guild
-from bot import GrowTube
-from discord import utils
-from bot import NotPermittedForPublish
+import storage
+from typing import Dict, Optional, Tuple, Callable
+from discord.ext.commands.errors import NoPrivateMessage
+from discord import Embed, Color, TextChannel, Guild, utils, Webhook
+from bot import GrowTube, NotPermittedForPublish
+from discord.ext import commands
 
 def from_hex(string):
     string = string.replace("#", "0x")
@@ -60,7 +57,7 @@ class QuitError(Exception):
     def __str__(self):
         return self.msg
 
-async def message_wait(ctx, predicate, input, msg="Invalid value!") -> discord.Message:
+async def message_wait(ctx: commands.Context, predicate: Callable[[discord.Message], bool], input, msg="Invalid value!") -> discord.Message:
     bot: GrowTube = ctx.bot
     await ctx.send(input+". Enter `cancel` to exit.")
     while True:
@@ -72,19 +69,19 @@ async def message_wait(ctx, predicate, input, msg="Invalid value!") -> discord.M
         elif not predicate(message):
             await ctx.send(msg)
 
-async def broadcast(chtype, ctx, *args, **kwargs):
+async def broadcast(chtype: int, ctx: commands.Context, *args, **kwargs):
     bot: GrowTube = ctx.bot
-    channels: Dict[str, Tuple[int, int, str]] = await bot.db.get(str(chtype))
+    channels = await bot.db.get_channels(chtype)
 
     async with aiohttp.ClientSession() as session:
-        async def _send(webhook_data: Tuple[int, int]):
+        async def _send(channel):
             try:
-                webhook = Webhook.partial(webhook_data[0], webhook_data[1], session=session)
+                webhook = Webhook.partial(channel.webhook, channel.token, session=session)
                 await webhook.send(*args, **kwargs, username=bot.user.name, avatar_url=bot.user.avatar.url)
             except Exception as e:
                 print(repr(e))
 
-        tasks = [asyncio.create_task(_send(i[1][1:])) for i in channels.items()]
+        tasks = [asyncio.create_task(_send(i)) for i in channels]
         if not tasks:
             return
         return await asyncio.wait(tasks)
@@ -92,9 +89,10 @@ async def broadcast(chtype, ctx, *args, **kwargs):
 def get_time():
     return datetime.datetime.utcnow() - datetime.timedelta(hours=4)
 
-async def _setchannel(ctx, chtype, channel_id, webhook_id) -> bool:
+async def _setchannel(ctx: commands.Context, chtype: int, channel_id: int, webhook_id: int) -> bool:
 
     bot: GrowTube = ctx.bot
+    guild = ctx.guild
     channel: TextChannel = ctx.guild.get_channel(channel_id)
     if webhook_id is None:
         webhook: Webhook = await channel.create_webhook(name="GrowTube News")
@@ -103,10 +101,12 @@ async def _setchannel(ctx, chtype, channel_id, webhook_id) -> bool:
         if not webhook:
             return False
     
-    guild_id: int = ctx.guild.id
-    channels: Dict[str, Tuple[int, int, str]] = await bot.db.get(str(chtype))
-    channels[str(guild_id)] = (channel_id, webhook.id, webhook.token)
-    await bot.db.set(chtype, channels)
+    channels = await bot.db.get_guild(guild.id)
+    channel = storage.Channel(channel_id, webhook.id, webhook.token)
+    if channels[chtype] is None:
+        await bot.db.add_channel(guild.id, chtype, channel)
+    else:
+        await bot.db.update_channel(guild.id, chtype, channel)
     return True
 
 def check(ctx: commands.Context):
@@ -195,11 +195,9 @@ class Articles(commands.Cog):
         Set a specific type of news to be sent on a channel.
         If this command is called without any argument, it show's all the channel this server is attached to.
         """
-        channels: Dict[str, Dict[str, Tuple[int, int, str]]] = dict(await self.bot.db.items())
-        guild: Guild = ctx.guild
+        channels = dict(await self.bot.db.get_guild(ctx.guild.id))
         to_render = set()
-        for key, value in _channel_dict.items():
-            channel = channels[str(key)].get(str(guild.id))
+        for channel in channels:
             if channel:
                 channel = guild.get_channel(channel[0])
                 channel = channel.mention

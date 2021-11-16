@@ -1,30 +1,17 @@
 import storage
-from discord.ext import commands
 import os
 import json
 import asyncio
 import traceback
-
-class DB(storage.MockAsyncReplitStorage):
-
-    def __init__(self, *args) -> None:
-        super().__init__(*args)
-        self._items.update(
-            {
-                "0": {},
-                "1": {},
-                "2": {}
-            }
-        )
+from discord.ext import commands
 
 class GrowTube(commands.Bot):
 
-    db: storage.AsyncReplitStorage
     CHANNEL_LOG = 883936874400452619
 
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
-        self.db = storage.AsyncReplitStorage()
+        self.db = storage.PostgresStorage(options.pop("dsn"))
 
     
     async def close(self):
@@ -37,7 +24,7 @@ def get_bot():
     
     config = None
     config_file = "config.json" if os.path.isfile("config.json") else "default-config.json"
-    with open("config.json") as f:
+    with open(config_file) as f:
         config = json.load(f)
     
     token = os.getenv("TOKEN")
@@ -49,7 +36,8 @@ def get_bot():
 
     bot = GrowTube(
         command_prefix = config["prefix"],
-        owner_ids = config["owners"]
+        owner_ids = config["owners"],
+        dsn = config["dsn"]
     )
 
     async def _ext_err(e: Exception):
@@ -88,4 +76,4 @@ def get_bot():
 
 if __name__ == "__main__":
     bot, token = get_bot()
-    bot.run(token)
+    #bot.run(token)
