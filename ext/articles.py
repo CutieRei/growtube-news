@@ -197,7 +197,7 @@ class Articles(commands.Cog):
         """
         channels = await self.bot.db.get_guild(ctx.guild.id)
         to_render = set()
-        for chtype, channel in zip(_channel_dict, channels):
+        for chtype, channel in zip(_channel_dict.values(), channels):
             if channel:
                 channel = guild.get_channel(channel.channel)
                 channel = channel.mention
