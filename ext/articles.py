@@ -195,15 +195,15 @@ class Articles(commands.Cog):
         Set a specific type of news to be sent on a channel.
         If this command is called without any argument, it show's all the channel this server is attached to.
         """
-        channels = dict(await self.bot.db.get_guild(ctx.guild.id))
+        channels = await self.bot.db.get_guild(ctx.guild.id)
         to_render = set()
-        for channel in channels:
+        for chtype, channel in zip(_channel_dict, channels):
             if channel:
-                channel = guild.get_channel(channel[0])
+                channel = guild.get_channel(channel.channel)
                 channel = channel.mention
             else:
                 channel = "none"
-            to_render.add(f"{value}: {channel}")
+            to_render.add(f"{chtype}: {channel}")
 
         embed = Embed(
             title = "Attached channels",
