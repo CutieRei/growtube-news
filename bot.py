@@ -12,7 +12,10 @@ class GrowTube(commands.Bot):
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         self.db = storage.PostgresStorage(options.pop("dsn"))
-
+     
+     async def start(self, *args, **kwargs):
+         await self.db
+         await super().start(*args, **kwargs)
     
     async def close(self):
         await asyncio.gather(self.db.close(), super().close())
