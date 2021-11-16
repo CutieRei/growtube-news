@@ -199,7 +199,7 @@ class Articles(commands.Cog):
         to_render = set()
         for chtype, channel in zip(_channel_dict.values(), channels):
             if channel:
-                channel = guild.get_channel(channel.channel)
+                channel = ctx.guild.get_channel(channel.channel)
                 channel = channel.mention
             else:
                 channel = "none"
