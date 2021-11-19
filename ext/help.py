@@ -18,8 +18,8 @@ class Help(commands.HelpCommand):
         except Exception:
             return False
     
-    async def command_not_found(self, string: str):
-        await self.get_destination().send(f"Cannot find any command or category named '{string}'")
+    async def command_not_found(self, string: str) -> str:
+        return f"Cannot find any command or category named '{string}'"
     
     async def send_bot_help(self, mapping: Mapping[Optional[commands.Cog], List[commands.Command]]):
         valid_commands = {}
@@ -82,12 +82,11 @@ class Help(commands.HelpCommand):
         embed.add_field(name="Subcommands", value="```\n"+(", ".join(sub.name for sub in group.commands) or "none")+"\n```")
         await self.get_destination().send(embed=embed)
     
-    async def subcommand_not_found(self, command: Union[commands.Group, commands.Command], string: str):
-        channel = self.get_destination()
+    async def subcommand_not_found(self, command: Union[commands.Group, commands.Command], string: str) -> str:
         if isinstance(command, commands.Group):
-            await channel.send(f"'{command.qualified_name}' doesn't have any subcommand named {string}")
+            return f"'{command.qualified_name}' doesn't have any subcommand named {string}"
         else:
-            await channel.send(f"'{command.qualified_name}' doesn't seem to have any subcommands")
+            return f"'{command.qualified_name}' doesn't seem to have any subcommands"
 
 def setup(bot: commands.Bot) -> None:
     bot.help_command = Help()
