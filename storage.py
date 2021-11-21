@@ -276,5 +276,5 @@ if _HAS_ASYNCPG:
             return [Channel(i["channel"], i["webhook"], i["token"]) for i in await self._pool.fetch("SELECT * FROM channels WHERE type = $1", channel_type)]
         
         async def remove_channel(self, channel: Channel) -> None:
-            await self._pool.execute("DELETE FROM channels WHERE channel = $1, type = $2", channel.channel, channel.type)
+            await self._pool.execute("DELETE FROM channels WHERE channel = $1 AND type = $2", channel.channel, channel.type)
     
