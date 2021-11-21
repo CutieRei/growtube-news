@@ -210,8 +210,7 @@ class Articles(commands.Cog):
         """
         channels = await self.bot.db.get_guild(ctx.guild.id)
         to_render = []
-        for channel in channels:
-            chtype = channel.type
+        for name, channel in zip(_channel_dict.values(), channels):
             if channel:
                 channel = ctx.guild.get_channel(channel.channel)
                 if channel is None:
@@ -220,7 +219,7 @@ class Articles(commands.Cog):
                     channel = channel.mention
             else:
                 channel = "none"
-            to_render.append(f"**{_channel_dict[chtype]}**: {channel}")
+            to_render.append(f"**{name}**: {channel}")
 
         embed = Embed(
             title = "Attached channels",
