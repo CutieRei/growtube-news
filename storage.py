@@ -5,7 +5,7 @@ try:
 except ImportError:
     _HAS_REPLIT = False
     
-from typing import Any, Dict, Mapping, Optional, Awaitable, List, Iterator, Tuple, Union
+from typing import Any, Dict, Literal, Mapping, Optional, Awaitable, List, Iterator, Tuple, Union
 
 try:
     import asyncpg # type: ignore
@@ -172,7 +172,7 @@ class Channel:
         return self._guild
 
     @property
-    def type(self) -> Union[0, 1, 2]:
+    def type(self) -> Union[Literal[0], Literal[1], Literal[3]]:
         return self._type
 
     @property
