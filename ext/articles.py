@@ -235,7 +235,7 @@ class Articles(commands.Cog):
     
     @channels.group(invoke_without_command=True)
     async def set(self, ctx: commands.Context):
-        "Set a channel news for this server, does nothing if called without subcommand"
+        "Set news channel for this server, does nothing if called without subcommand"
         return
         
     @set.command(name="announcement")
@@ -250,31 +250,38 @@ class Articles(commands.Cog):
         """
         Set `VOTW, WOTD` news to be sent to this channel.
         """
-        await _setchannel(ctx, Channel.category2, channel.id, webhook)
 
-    @set.command(name="growtopia-community", aliases=["community", "gt-community"])
+    @set.command(name="growtopia-community", aliases=["gt-community"])
     async def set_growtopia_community(self, ctx: commands.Context, channel: TextChannel, webhook: Optional[int] = None):
         """
         Set Growtopia Community `Forums, Guidebook, Suggestions` news to be sent to this channel.
-
-        The alias 'community' is deprecated please migrate any automation to 'growtopia-community' or 'gt-community'
         """
         await _setchannel(ctx, Channel.category3, channel.id, webhook)
 
     @channels.group(invoke_without_command=True, aliases=["remove", "del", "rm"])
     async def delete(self, ctx: commands.Context):
+        "Remove news channel from this server (this does not delete the actual channel)"
         return
 
     @delete.command(name="announcement")
     async def del_announcement(self, ctx: commands.Context):
+        """
+        Remove `Growtopia Announcement, Growtopia News, Growtube News` channel from this server
+        """
         await _deletechannel(ctx, Channel.category1)
     
     @delete.command(name="contest")
     async def del_contest(self, ctx: commands.Context):
+        """
+        Remove `VOTW, WOTD` channel from this server
+        """
         await _deletechannel(ctx, Channel.category2)
     
     @delete.command(name="growtopia-community", aliases=["community", "gt-community"])
     async def del_growtopia_community(self, ctx: commands.Context):
+        """
+        Remove Growtopia Community `Forums, Guidebook, Suggestions` channel from this server
+        """
         await _deletechannel(ctx, Channel.category3)
 
     @commands.command()
@@ -282,7 +289,6 @@ class Articles(commands.Cog):
     async def publish(self, ctx):
         """
         Publishes a news to everyone, news types affects which channel the news is sent to
-        check out `setchannel` for more info.
         """
         try:
             title = await message_wait(ctx, None, "What's the title of this news?")
