@@ -84,9 +84,9 @@ class Help(commands.HelpCommand):
     
     def subcommand_not_found(self, command: Union[commands.Group, commands.Command], string: str) -> str:
         if isinstance(command, commands.Group):
-            return f"'{self.command}' doesn't have any subcommand named {string}"
+            return f"'{self.command.rstrip(string).rstrip()}' doesn't have any subcommand named {string}"
         else:
-            return f"'{self.command}' doesn't seem to have any subcommands"
+            return f"'{self.command.rstrip(string).rstrip()}' doesn't seem to have any subcommands"
 
 def setup(bot: commands.Bot) -> None:
     bot.help_command = Help()
