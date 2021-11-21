@@ -80,10 +80,10 @@ async def broadcast(chtype: int, ctx: commands.Context, *args, **kwargs):
         except Exception as e:
             print(repr(e))
 
-        tasks = [asyncio.create_task(_send(i)) for i in channels]
-        if not tasks:
-            return
-        return await asyncio.wait(tasks)
+    tasks = [asyncio.create_task(_send(i)) for i in channels]
+    if not tasks:
+        return
+    return await asyncio.wait(tasks)
     
 def get_time():
     return datetime.datetime.utcnow() - datetime.timedelta(hours=4)
