@@ -1,14 +1,14 @@
 
 try:
-    import replit
+    import replit # type: ignore
     _HAS_REPLIT = True
 except ImportError:
     _HAS_REPLIT = False
     
-from typing import Any, Dict, Optional, Awaitable, List, Iterator
+from typing import Any, Dict, Mapping, Optional, Awaitable, List, Iterator, Tuple, Union
 
 try:
-    import asyncpg
+    import asyncpg # type: ignore
     _HAS_ASYNCPG = True
 except ImportError:
     _HAS_ASYNCPG = False
@@ -40,7 +40,6 @@ class AsyncStorageMixin:
     
     async def items(self):
         raise NotImplementedError()
-        
 
 class SessionStorageMixin:
 
@@ -160,41 +159,78 @@ class MockAsyncStorage(AsyncSessionStorageMixin, AsyncStorageMixin):
 
 class Channel:
     
-    def __init__(self, channel, webhook, token) -> None:
+    def __init__(self, guild, channel_type, channel, webhook, token) -> None:
         
+        self._guild = guild
+        self._type = channel_type
         self._channel = channel
         self._webhook = webhook
         self._token = token
     
     @property
-    def channel(self):
+    def guild(self) -> int:
+        return self._guild
+
+    @property
+    def type(self) -> Union[0, 1, 2]:
+        return self._type
+
+    @property
+    def channel(self) -> int:
         return self._channel
     
     @property
-    def webhook(self):
+    def webhook(self) -> int:
         return self._webhook
     
     @property
-    def token(self):
+    def token(self) -> str:
         return self._token
     
+class GuildChannels:
+        
+    def __init__(self, records: List[Mapping]) -> None:
+        
+        self._items = {
+        i["type"]: Channel(i["guild"], i["type"], i["channel"], i["webhook"], i["token"]) for i in records
+            }
+    
+    def __getitem__(self, k: int) -> Optional[Channel]:
+        return self._items.get(k)
+    
+    def __iter__(self) -> Iterator[Optional[Channel]]:
+        for i in range(3):
+            yield self._items.get(i)
+
+class DatabaseMixin:
+    
+    def __await__(self):
+        raise NotImplementedError
+    
+    async def close(self) -> None:
+        raise NotImplementedError
+
+    async def get_guild(self, guild_id: int) -> GuildChannels:
+        raise NotImplementedError
+    
+    async def get_channel(self, channel_id: int, channel_type: int) -> Optional[Channel]:
+        raise NotImplementedError
+    
+    async def add_channel(self, channel: Channel) -> None:
+        raise NotImplementedError
+    
+    async def update_channel(self, channel: Channel) -> None:
+        raise NotImplementedError
+    
+    async def get_channels(self, channel_type: int) -> List[Channel]:
+        raise NotImplementedError
+    
+    async def remove_channel(self, channel: Channel) -> None:
+        raise NotImplementedError
+
 if _HAS_ASYNCPG:
-    class GuildChannels:
-        
-        def __init__(self, records: List[asyncpg.Record]) -> None:
-            
-            self._items = {
-            i["type"]: Channel(i["channel"], i["webhook"], i["token"]) for i in records
-                }
-        
-        def __getitem__(self, k: int) -> Optional[Channel]:
-            return self._items.get(k)
-        
-        def __iter__(self) -> Iterator[Optional[Channel]]:
-            for i in range(3):
-                yield self._items.get(i)
-            
-    class PostgresStorage:
+
+    class PostgresStorage(DatabaseMixin):
         
         def __init__(self, dsn: str):
             
@@ -218,20 +254,27 @@ if _HAS_ASYNCPG:
         async def close(self) -> None:
             await self._pool.close()
         
-        async def get_guild(self, guild_id: int) -> Any:
+        async def get_guild(self, guild_id: int) -> GuildChannels:
             records = await self._pool.fetch("SELECT * FROM channels WHERE guild = $1", guild_id)
             return GuildChannels(records)
         
-        async def add_channel(self, guild_id: int, channel_type: int, channel: Channel) -> None:
+        async def get_channel(self, channel_id: int, channel_type: int) -> Optional[Channel]:
+            record = await self._pool.fetchrow("SELECT * FROM channels WHERE channel = $1 and type = $2", channel_id, channel_type)
+            return Channel(record["guild"], record["type"], record["channel"], record["webhook"], record["token"]) if record is not None else record
+        
+        async def add_channel(self, channel: Channel) -> None:
             await self._pool.execute("""
                 INSERT INTO channels (guild, type, channel, webhook, token) SELECT $1,$2,$3,$4,$5 WHERE NOT EXISTS (SELECT 1 FROM channels WHERE guild = $1 AND type = $2)
-                """, guild_id, channel_type, channel.channel, channel.webhook, channel.token)
+                """, channel.guild, channel.type, channel.channel, channel.webhook, channel.token)
         
-        async def update_channel(self, guild_id: int, channel_type: int, channel: Channel) -> None:
+        async def update_channel(self, channel: Channel) -> None:
             await self._pool.execute("""
                 UPDATE channels SET channel = $1, webhook = $2, token = $3 WHERE guild = $4 AND type = $5
-                """, channel.channel, channel.webhook, channel.token, guild_id, channel_type)
+                """, channel.channel, channel.webhook, channel.token, channel.guild, channel.type)
         
         async def get_channels(self, channel_type: int) -> List[Channel]:
             return [Channel(i["channel"], i["webhook"], i["token"]) for i in await self._pool.fetch("SELECT * FROM channels WHERE type = $1", channel_type)]
+        
+        async def remove_channel(self, channel: Channel) -> None:
+            await self._pool.execute("DELETE FROM channels WHERE channel = $1, type = $2", channel.channel, channel.type)
     

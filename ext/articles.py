@@ -5,7 +5,7 @@ import asyncio
 import storage
 from typing import Dict, Optional, Tuple, Callable
 from discord.ext.commands.errors import NoPrivateMessage
-from discord import Embed, Color, TextChannel, Guild, utils, Webhook
+from discord import Embed, Color, TextChannel, utils, Webhook
 from bot import GrowTube, NotPermittedForPublish
 from discord.ext import commands
 
@@ -93,20 +93,34 @@ async def _setchannel(ctx: commands.Context, chtype: int, channel_id: int, webho
 
     bot: GrowTube = ctx.bot
     guild = ctx.guild
-    channel: TextChannel = ctx.guild.get_channel(channel_id)
+    channel = ctx.guild.get_channel(channel_id)
     if webhook_id is None:
         webhook: Webhook = await channel.create_webhook(name="GrowTube News")
     else:
         webhook: Webhook = utils.get(await channel.webhooks(), id=webhook_id)
         if not webhook:
+            await ctx.send("Webhook not found")
             return False
     
     channels = await bot.db.get_guild(guild.id)
-    channel = storage.Channel(channel_id, webhook.id, webhook.token)
+    channel = storage.Channel(guild.id, chtype, channel_id, webhook.id, webhook.token)
     if channels[chtype] is None:
-        await bot.db.add_channel(guild.id, chtype, channel)
+        await bot.db.add_channel(channel)
     else:
-        await bot.db.update_channel(guild.id, chtype, channel)
+        await bot.db.update_channel(channel)
+    
+    channel = guild.get_channel(channel.channel)
+    await ctx.send(f"Successfully set **{_channel_dict[chtype]}** channel to {channel.mention}")
+    return True
+
+async def _deletechannel(ctx: commands.Context, chtype: int) -> bool:
+    bot: GrowTube = ctx.bot
+    channel = (await bot.db.get_guild(ctx.guild.id))[chtype]
+    if channel is None:
+        await ctx.send("Not attached to any channels")
+        return False
+    await bot.db.remove_channel(channel)
+    await ctx.send(f"Removed channel for **{_channel_dict[chtype]}**")
     return True
 
 def check(ctx: commands.Context):
@@ -190,20 +204,23 @@ class Articles(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.check(check_channel)
-    async def setchannel(self, ctx: commands.Context):
+    async def channels(self, ctx: commands.Context):
         """
-        Set a specific type of news to be sent on a channel.
-        If this command is called without any argument, it show's all the channel this server is attached to.
+        If this command is called without any subcommands, it show's all the channel this server is attached to.
         """
         channels = await self.bot.db.get_guild(ctx.guild.id)
-        to_render = set()
-        for chtype, channel in zip(_channel_dict.values(), channels):
+        to_render = []
+        for channel in channels:
+            chtype = channel.type
             if channel:
                 channel = ctx.guild.get_channel(channel.channel)
-                channel = channel.mention
+                if channel is None:
+                    channel = "[channel deleted]"
+                else:
+                    channel = channel.mention
             else:
                 channel = "none"
-            to_render.add(f"{chtype}: {channel}")
+            to_render.append(f"**{_channel_dict[chtype]}**: {channel}")
 
         embed = Embed(
             title = "Attached channels",
@@ -212,35 +229,50 @@ class Articles(commands.Cog):
             timestamp =  datetime.datetime.utcnow()
         )
         await ctx.send(embed=embed)
+    
+    @channels.group(invoke_without_command=True)
+    async def set(self, ctx: commands.Context):
+        "Set a channel news for this server, does nothing if called without subcommand"
+        return
         
-    @setchannel.command()
-    async def announcement(self, ctx, channel: TextChannel, webhook: Optional[int] = None):
+    @set.command(name="announcement")
+    async def set_announcement(self, ctx: commands.Context, channel: TextChannel, webhook: Optional[int] = None):
         """
         Set `Growtopia Announcement, Growtopia News, Growtube News` news to be sent to this channel.
         """
-        if not await _setchannel(ctx, Channel.category1, channel.id, webhook):
-            return await ctx.send("Webhook not found!")
-        await ctx.send(f"Successfully set announcement channel to {channel.mention}")
+        await _setchannel(ctx, Channel.category1, channel.id, webhook)
 
-    @setchannel.command()
-    async def contest(self, ctx, channel: TextChannel, webhook: Optional[int] = None):
+    @set.command(name="contest")
+    async def set_contest(self, ctx: commands.Context, channel: TextChannel, webhook: Optional[int] = None):
         """
         Set `VOTW, WOTD` news to be sent to this channel.
         """
-        if not await _setchannel(ctx, Channel.category2, channel.id, webhook):
-            return await ctx.send("Webhook not found!")
-        await ctx.send(f"Successfully set contest news channel to {channel.mention}")
+        await _setchannel(ctx, Channel.category2, channel.id, webhook)
 
-    @setchannel.command(name="growtopia-community", aliases=["community", "gt-community"])
-    async def growtopia_community(self, ctx, channel: TextChannel, webhook: Optional[int] = None):
+    @set.command(name="growtopia-community", aliases=["community", "gt-community"])
+    async def set_growtopia_community(self, ctx: commands.Context, channel: TextChannel, webhook: Optional[int] = None):
         """
         Set Growtopia Community `Forums, Guidebook, Suggestions` news to be sent to this channel.
 
         The alias 'community' is deprecated please migrate any automation to 'growtopia-community' or 'gt-community'
         """
-        if not await _setchannel(ctx, Channel.category3, channel.id, webhook):
-            return await ctx.send("Webhook not found!")
-        await ctx.send(f"Successfully set community news channel to {channel.mention}")
+        await _setchannel(ctx, Channel.category3, channel.id, webhook)
+
+    @channels.group(invoke_without_command=True, aliases=["remove", "del", "rm"])
+    async def delete(self, ctx: commands.Context):
+        return
+
+    @delete.command(name="announcement")
+    async def del_announcement(self, ctx: commands.Context):
+        await _deletechannel(ctx, Channel.category1)
+    
+    @delete.command(name="contest")
+    async def del_contest(self, ctx: commands.Context):
+        await _deletechannel(ctx, Channel.category2)
+    
+    @delete.command(name="growtopia-community", aliases=["community", "gt-community"])
+    async def del_growtopia_community(self, ctx: commands.Context):
+        await _deletechannel(ctx, Channel.category3)
 
     @commands.command()
     @commands.check(check)
