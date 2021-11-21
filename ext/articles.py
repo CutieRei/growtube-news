@@ -250,6 +250,7 @@ class Articles(commands.Cog):
         """
         Set `VOTW, WOTD` news to be sent to this channel.
         """
+        await _setchannel(ctx, Channel.category2, channel.id, webhook)
 
     @set.command(name="growtopia-community", aliases=["gt-community"])
     async def set_growtopia_community(self, ctx: commands.Context, channel: TextChannel, webhook: Optional[int] = None):
