@@ -1,3 +1,4 @@
+import aiohttp
 import storage
 import os
 import json
@@ -15,10 +16,11 @@ class GrowTube(commands.Bot):
      
     async def start(self, *args, **kwargs):
         await self.db
+        self.http_session = aiohttp.ClientSession()
         await super().start(*args, **kwargs)
     
     async def close(self):
-        await asyncio.gather(self.db.close(), super().close())
+        await asyncio.gather(self.db.close(), self.http_session.close(), super().close())
 
 class NotPermittedForPublish(commands.CheckFailure):
     pass

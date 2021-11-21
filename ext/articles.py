@@ -73,13 +73,12 @@ async def broadcast(chtype: int, ctx: commands.Context, *args, **kwargs):
     bot: GrowTube = ctx.bot
     channels = await bot.db.get_channels(chtype)
 
-    async with aiohttp.ClientSession() as session:
-        async def _send(channel):
-            try:
-                webhook = Webhook.partial(channel.webhook, channel.token, session=session)
-                await webhook.send(*args, **kwargs, username=bot.user.name, avatar_url=bot.user.avatar.url)
-            except Exception as e:
-                print(repr(e))
+    async def _send(channel):
+        try:
+            webhook = Webhook.partial(channel.webhook, channel.token, session=bot.http_session)
+            await webhook.send(*args, **kwargs, username=bot.user.name, avatar_url=bot.user.avatar.url)
+        except Exception as e:
+            print(repr(e))
 
         tasks = [asyncio.create_task(_send(i)) for i in channels]
         if not tasks:
@@ -120,6 +119,11 @@ async def _deletechannel(ctx: commands.Context, chtype: int) -> bool:
         await ctx.send("Not attached to any channels")
         return False
     await bot.db.remove_channel(channel)
+    webhook = Webhook.partial(channel.webhook, channel.token, session=bot.http_session)
+    try:
+        await webhook.delete()
+    except discord.HTTPException:
+        pass
     await ctx.send(f"Removed channel for **{_channel_dict[chtype]}**")
     return True
 
