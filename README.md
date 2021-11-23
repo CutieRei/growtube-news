@@ -12,8 +12,10 @@ $ git clone https://github.com/ReyterYT/growtube-news.git
 
 Install dependencies with poetry (you need to have poetry installed)
 ```console
-$ poetry install
+$ poetry install -E pg
 ```
+
+If you can't or don't use asyncpg you can install without the `-E pg` flag
 
 Configure `config.json` if the file does not exist, it will use `default-config.json` instead
 
