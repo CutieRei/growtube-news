@@ -1,6 +1,7 @@
 {
     "prefix": "GN",
     "ext_dir": "ext",
+	"channel_log": null,
     "debug": false,
     "ext": [
         "help",

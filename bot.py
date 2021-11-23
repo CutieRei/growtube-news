@@ -8,9 +8,6 @@ from discord.ext import commands
 
 
 class GrowTube(commands.Bot):
-
-    CHANNEL_LOG = 883936874400452619
-
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(
             command_prefix,
@@ -19,6 +16,7 @@ class GrowTube(commands.Bot):
             **options,
         )
         self.db = storage.PostgresStorage(options.pop("dsn"))
+        self.CHANNEL_LOG = options.pop("channel_log", None)
 
     async def start(self, *args, **kwargs):
         await self.db
@@ -53,7 +51,10 @@ def get_bot():
         token = os.getenv("TOKEN")
 
     bot = GrowTube(
-        command_prefix=config["prefix"], owner_ids=config["owners"], dsn=config["dsn"]
+        command_prefix=config["prefix"],
+        owner_ids=config["owners"],
+        dsn=config["dsn"],
+        channel_log=config["channel_log"],
     )
 
     async def _ext_err(e: Exception):
