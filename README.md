@@ -6,38 +6,45 @@ A Discord news bot for GrowTube Production
 
 Clone this repository
 
-```bash
-git clone https://github.com/ReyterYT/growtube-news.git
+```console
+$ git clone https://github.com/ReyterYT/growtube-news.git
 ```
 
-Install dependencies with poetry
-
-```bash
-poetry install
-```
-
-If you're having trouble with installing `discord.py` you should install it manually
-
-```bash
-pip install git+https://github.com/Rapptz/discord.py
+Install dependencies with poetry (you need to have poetry installed)
+```console
+$ poetry install
 ```
 
 Configure `config.json` if the file does not exist, it will use `default-config.json` instead
 
-**Important**: If you are running outside of replit environment or does not have the replit database url you should change `bot.py` line 25 with `DB()` or any other async storage in `storage.py`, you can even make your own storage class
 
 ## How to run
 
 For Windows:
 
-```bat
-python3 main.py
+```console
+$ python3 main.py
 ```
 
 Because due to issue with click coloured output on windows
 
-For any other OS:
+Linux/MacOS:
 
-```bash
-uvicorn server:app
+```console
+$ uvicorn server:app
 ```
+
+## Setup Database
+
+Run this in your database
+
+```sql
+CREATE TABLE "channels" (
+"guild" BIGINT NOT NULL,
+"type" SMALLINT NOT NULL,
+"channel" BIGINT NOT NULL,
+"webhook" BIGINT NOT NULL,
+"token" VARCHAR(68) NOT NULL);
+```
+
+postgresql database url example is in `default-config.json`

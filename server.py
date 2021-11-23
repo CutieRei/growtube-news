@@ -4,10 +4,8 @@ import importlib
 import bot as bot_m
 
 app = fastapi.FastAPI()
-config = {
-    "app": app,
-    "bot": None
-}
+config = {"app": app, "bot": None}
+
 
 @app.on_event("startup")
 async def startup():
@@ -18,6 +16,7 @@ async def startup():
     asyncio.create_task(bot.start(token))
     await bot.wait_until_ready()
 
+
 @app.post("/restart")
 async def restart(token: str = fastapi.Form(...)):
     bot = config["bot"]
@@ -27,8 +26,7 @@ async def restart(token: str = fastapi.Form(...)):
     await startup()
     return {"status": 200, "msg": "Ok"}
 
+
 @app.get("/ping")
 def ping():
-    return {
-        "msg": "PONG!"
-    }
+    return {"msg": "PONG!"}

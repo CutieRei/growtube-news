@@ -1,6 +1,0 @@
-run = "uvicorn server:app --host 0.0.0.0"
-language = "python3"
-
-[packager]
-ignoredPaths = ["."]
-afterInstall = ""

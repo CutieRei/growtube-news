@@ -1,10 +1,3 @@
-try:
-    import replit  # type: ignore
-
-    _HAS_REPLIT = True
-except ImportError:
-    _HAS_REPLIT = False
-
 from typing import (
     Any,
     Dict,
@@ -82,73 +75,6 @@ class InMemoryStorage(StorageMixin):
 
     def __repr__(self) -> str:
         return "<{}>".format(repr(self._items))
-
-
-if _HAS_REPLIT:
-
-    class ReplitStorage(SessionStorageMixin, StorageMixin):
-        def __init__(self, db_url: Optional[str] = None) -> None:
-
-            self._db: replit.Database = replit.db or replit.Database(
-                db_url or replit.database.db_url
-            )
-
-        def get(self, k: str, default: Optional[Any] = None) -> Any:
-            return self._db.get(k, default=default)
-
-        def set(self, k: str, val: Any) -> None:
-            return self._db.set(k, val)
-
-        def delete(self, k: str, default: Optional[Any] = None) -> Any:
-            class _None:
-                pass
-
-            item = self.get(k, default=_None)
-            if item is _None:
-                return default
-
-            del self._db[k]
-            return item
-
-        def close(self) -> None:
-            self._db.close()
-
-        def items(self):
-            return self._db.items()
-
-    class AsyncReplitStorage(AsyncSessionStorageMixin, AsyncStorageMixin):
-        def __init__(self, db_url: Optional[str] = None) -> None:
-
-            self._db: replit.AsyncDatabase = replit.AsyncDatabase(
-                db_url or replit.database.db_url
-            )
-
-        async def get(self, k: str, default: Optional[Any] = None) -> Any:
-            try:
-                return await self._db.get(k)
-            except KeyError:
-                return default
-
-        async def set(self, k: str, val: Any) -> None:
-            await self._db.set(k, val)
-
-        async def delete(self, k: str, default: Optional[Any] = None) -> Any:
-            class _None:
-                pass
-
-            item = await self.get(k, default=_None)
-
-            if item is _None:
-                return default
-
-            await self._db.delete(k)
-            return item
-
-        async def close(self) -> None:
-            await self._db.sess.close()
-
-        async def items(self):
-            return await self._db.items()
 
 
 class MockAsyncStorage(AsyncSessionStorageMixin, AsyncStorageMixin):
