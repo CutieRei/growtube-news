@@ -56,7 +56,9 @@ class Help(commands.HelpCommand):
             if await self._can_run(self.context, cmd):
                 valid_commands.add(cmd)
         if not valid_commands:
-            return await self.command_not_found(self.command)
+            return await self.get_destination().send(
+                self.command_not_found(self.command)
+            )
 
         embed = discord.Embed(
             title=f"Help for {cog.qualified_name}",
