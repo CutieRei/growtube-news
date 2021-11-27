@@ -24,6 +24,7 @@ class Help(commands.HelpCommand):
             return False
 
     def command_not_found(self, string: str) -> str:
+        string = string.split()[0]
         return f"Cannot find any command or category named '{string}'"
 
     async def send_bot_help(

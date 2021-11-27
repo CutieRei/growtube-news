@@ -20,7 +20,7 @@ class GrowTube(commands.Bot):
             **options,
         )
         debug = options.pop("debug", False)
-        sh = logging.StreamHandler()
+        sh = logs.ClickStreamHandler()
         sh.setFormatter(
             logs.ColouredFormatter(
                 "[%(levelname)s][%(filename)s] %(message)s",

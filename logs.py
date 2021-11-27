@@ -34,3 +34,15 @@ class ColouredFormatter(logging.Formatter):
             levelname = COLOURED_LEVEL[copied.levelno]
             copied.__dict__["levelname"] = levelname
         return super().formatMessage(copied)
+
+
+class ClickStreamHandler(logging.StreamHandler):
+    def emit(self, record: logging.LogRecord):
+        try:
+            msg = self.format(record)
+            click.echo(msg + self.terminator, nl=False, file=self.stream)
+            self.flush()
+        except RecursionError:
+            raise
+        except Exception:
+            self.handleError(record)
