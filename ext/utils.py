@@ -26,8 +26,8 @@ class Utility(commands.Cog):
         meminfo = python_proc.memory_info()
         uptime = datetime.utcnow() - self.bot.uptime
         embed.add_field(
-            "Bot Usage",
-            f"""
+            name="Bot Usage",
+            value=f"""
             Memory Usage: {meminfo.rss / (1024 ** 2):.2f}MiB
             Virtual Memory Usage: {meminfo.vms / (1024 ** 2):.2f}MiB
             Threads: {len(threading.enumerate())}
@@ -45,8 +45,8 @@ class Utility(commands.Cog):
             ]
         )
         embed.add_field(
-            "System Info",
-            f"""
+            name="System Info",
+            value=f"""
         Available Memory: {virtual_memory.available}
         Used Memory: {virtual_memory.used}
         Free Memory: {virtual_memory.free}
