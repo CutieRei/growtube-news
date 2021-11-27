@@ -3,6 +3,8 @@ from discord.ext import commands
 import discord
 import datetime
 
+from bot import GrowTube
+
 embed_color = discord.Color(15007744)
 
 
@@ -115,6 +117,6 @@ class Help(commands.HelpCommand):
             return f"'{self.command.rstrip(string).rstrip()}' doesn't seem to have any subcommands"
 
 
-def setup(bot: commands.Bot) -> None:
+def setup(bot: GrowTube) -> None:
     bot.help_command = Help()
-    print("Loaded help command")
+    bot.log.info(f"Loaded {__name__}")

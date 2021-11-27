@@ -422,6 +422,6 @@ class Articles(commands.Cog):
         await asyncio.gather(*tasks, confirmation.add_reaction("✅"))
 
 
-def setup(bot: commands.Bot):
+def setup(bot: GrowTube):
     bot.add_cog(Articles(bot))
-    print("Loaded articles")
+    bot.log.info(f"Loaded {__name__}")

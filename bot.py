@@ -1,4 +1,6 @@
 import aiohttp
+import logs
+import logging
 import storage
 import os
 import json
@@ -15,8 +17,19 @@ class GrowTube(commands.Bot):
             description=description,
             **options,
         )
-        self.db = storage.PostgresStorage(options.pop("dsn"))
+        debug = options.pop("debug", False)
+        sh = logging.StreamHandler()
+        sh.setFormatter(
+            logs.ColouredFormatter(
+                "[%(levelname)s][%(filename)s] %(message)s",
+                use_colours=options.pop("use_colour", True),
+            )
+        )
+        # self.db = storage.PostgresStorage(options.pop("dsn"))
         self.CHANNEL_LOG = options.pop("channel_log", None)
+        self.log = logging.getLogger(__name__)
+        self.log.setLevel(logging.DEBUG if debug else logging.INFO)
+        self.log.addHandler(sh)
 
     async def start(self, *args, **kwargs):
         await self.db
@@ -33,7 +46,7 @@ class NotPermittedForPublish(commands.CheckFailure):
     pass
 
 
-def get_bot():
+def get_bot(use_colour: bool = True):
 
     config = None
     config_file = (
@@ -55,6 +68,8 @@ def get_bot():
         owner_ids=config["owners"],
         dsn=config["dsn"],
         channel_log=config["channel_log"],
+        debug=config.get("debug", False),
+        use_colour=use_colour,
     )
 
     async def _ext_err(e: Exception):
@@ -96,4 +111,4 @@ def get_bot():
 
 if __name__ == "__main__":
     bot, token = get_bot()
-    # bot.run(token)
+    bot.run(token)

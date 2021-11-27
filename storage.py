@@ -2,11 +2,9 @@ from typing import (
     Any,
     Dict,
     Literal,
-    Mapping,
     Optional,
     Awaitable,
     List,
-    Iterator,
     Tuple,
     Union,
 )
@@ -127,22 +125,7 @@ class Channel:
         return self._token
 
 
-class GuildChannels:
-    def __init__(self, records: List[Mapping]) -> None:
-
-        self._items = {
-            i["type"]: Channel(
-                i["guild"], i["type"], i["channel"], i["webhook"], i["token"]
-            )
-            for i in records
-        }
-
-    def __getitem__(self, k: int) -> Optional[Channel]:
-        return self._items.get(k)
-
-    def __iter__(self) -> Iterator[Optional[Channel]]:
-        for i in range(3):
-            yield self._items.get(i)
+GuildChannels = Tuple[Optional[Channel], Optional[Channel], Optional[Channel]]
 
 
 class DatabaseMixin:
@@ -202,7 +185,16 @@ if _HAS_ASYNCPG:
             records = await self._pool.fetch(
                 "SELECT * FROM channels WHERE guild = $1", guild_id
             )
-            return GuildChannels(records)
+            channels = {i: None for i in range(3)}
+            for record in records:
+                channels[record["type"]] = Channel(
+                    record["guild"],
+                    record["type"],
+                    record["channel"],
+                    record["webhook"],
+                    record["token"],
+                )
+            return tuple(channels.values())
 
         async def get_channel(
             self, channel_id: int, channel_type: int

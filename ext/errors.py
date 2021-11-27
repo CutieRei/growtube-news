@@ -1,4 +1,4 @@
-from bot import NotPermittedForPublish
+from bot import GrowTube, NotPermittedForPublish
 from discord.ext import commands
 from discord.ext.commands.errors import (
     CommandNotFound,
@@ -16,12 +16,11 @@ class ErrorHandler(commands.Cog):
     ):
         error = getattr(error, "original", error)
 
-        if hasattr(ctx.command, "on_error"):
+        if ctx.command.has_error_handler():
             return
 
-        cog = ctx.cog
-        if cog:
-            if cog._get_overridden_method(cog.cog_command_error) is not None:
+        if cog := ctx.cog:
+            if cog.has_error_handler():
                 return
 
         if isinstance(error, MissingRequiredArgument):
@@ -51,6 +50,6 @@ class ErrorHandler(commands.Cog):
                 )
 
 
-def setup(bot):
+def setup(bot: GrowTube):
     bot.add_cog(ErrorHandler())
-    print("Loaded errors")
+    print(f"Loaded {__name__}")
