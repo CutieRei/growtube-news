@@ -52,4 +52,4 @@ class ErrorHandler(commands.Cog):
 
 def setup(bot: GrowTube):
     bot.add_cog(ErrorHandler())
-    bot.log.info(f"Loaded {__name__}")
+    bot.log.info(f"Loaded {__file__}")

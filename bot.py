@@ -6,10 +6,11 @@ import os
 import json
 import asyncio
 import traceback
-import humanize
+import psutil
 from discord.ext import commands
 from datetime import datetime
 
+psutil.cpu_percent()
 
 class GrowTube(commands.Bot):
     def __init__(self, command_prefix, help_command=None, description=None, **options):
@@ -100,11 +101,6 @@ def get_bot(use_colour: bool = True):
     @bot.listen()
     async def on_ready():
         bot.log.info("Logged in")
-
-    @bot.command()
-    async def uptime(ctx):
-        time = datetime.utcnow() - bot.uptime
-        await ctx.send(f"Bot has been up for **{humanize.precisedelta(time)}**")
 
     return bot, token
 

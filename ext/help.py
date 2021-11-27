@@ -120,4 +120,4 @@ class Help(commands.HelpCommand):
 
 def setup(bot: GrowTube) -> None:
     bot.help_command = Help()
-    bot.log.info(f"Loaded {__name__}")
+    bot.log.info(f"Loaded {__file__}")

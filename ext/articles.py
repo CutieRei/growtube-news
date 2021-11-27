@@ -110,7 +110,7 @@ async def broadcast(chtype: int, ctx: commands.Context, *args, **kwargs):
                 channel.webhook, channel.token, session=bot.http_session
             )
             await webhook.send(
-                *args, **kwargs, username=bot.user.name, avatar_url=bot.user.avatar.url
+                username=bot.user.name, avatar_url=bot.user.avatar.url, allowed_mentions=discord.AllowedMentions.none(), *args, **kwargs
             )
         except Exception as e:
             print(repr(e))
@@ -424,4 +424,4 @@ class Articles(commands.Cog):
 
 def setup(bot: GrowTube):
     bot.add_cog(Articles(bot))
-    bot.log.info(f"Loaded {__name__}")
+    bot.log.info(f"Loaded {__file__}")
