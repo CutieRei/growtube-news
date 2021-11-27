@@ -22,7 +22,7 @@ class Utility(commands.Cog):
     @commands.command()
     async def info(self, ctx):
         embed = discord.Embed(color=discord.Color.random())
-        python_proc = psutil.Process(os.getpgid())
+        python_proc = psutil.Process(os.getpid())
         meminfo = python_proc.memory_info()
         uptime = datetime.utcnow() - self.bot.uptime
         embed.add_field(
@@ -30,7 +30,7 @@ class Utility(commands.Cog):
             f"""
             Memory Usage: {meminfo.rss / (1024 ** 2):.2f}MiB
             Virtual Memory Usage: {meminfo.vms / (1024 ** 2):.2f}MiB
-            Threads: {len(threading.enumerate)}
+            Threads: {len(threading.enumerate())}
             Processes: {len(multiprocessing.active_children())}
             Tasks: {len(asyncio.all_tasks())}
             Lib: {discord.__name__}=={discord.__version__} by {discord.__author__}
