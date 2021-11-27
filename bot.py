@@ -6,7 +6,9 @@ import os
 import json
 import asyncio
 import traceback
+import humanize
 from discord.ext import commands
+from datetime import datetime
 
 
 class GrowTube(commands.Bot):
@@ -34,6 +36,7 @@ class GrowTube(commands.Bot):
     async def start(self, *args, **kwargs):
         await self.db
         self.http_session = aiohttp.ClientSession()
+        self.uptime = datetime.utcnow()
         await super().start(*args, **kwargs)
 
     async def close(self):
@@ -90,21 +93,12 @@ def get_bot(use_colour: bool = True):
 
     @bot.listen()
     async def on_ready():
-        print("Logged in")
-
-    import aiohttp
-
-    async def _job():
-        async with aiohttp.ClientSession() as sess:
-            await sess.post(
-                "http://localhost:8000/restart", data={"token": bot.http.token}
-            )
+        bot.log.info("Logged in")
 
     @bot.command()
-    @commands.is_owner()
-    async def restart(ctx):
-        await ctx.message.add_reaction("\U00002705")
-        asyncio.create_task(_job())
+    async def uptime(ctx):
+        time = datetime.utcnow() - bot.uptime
+        await ctx.send(f"Bot has been up for **{humanize.precisedelta(time)}**")
 
     return bot, token
 
