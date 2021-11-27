@@ -14,7 +14,7 @@ class Utility(commands.Cog):
     def __init__(self, bot: GrowTube) -> None:
         self.bot = bot
 
-    @commands.commands()
+    @commands.command()
     async def uptime(self, ctx):
         time = datetime.utcnow() - self.bot.uptime
         await ctx.send(f"Bot has been up for **{humanize.precisedelta(time)}**")
