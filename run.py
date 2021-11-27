@@ -7,10 +7,16 @@ from bot import get_bot
 def main(use_color: bool):
     bot, token = get_bot(use_colour=use_color)
     if use_color:
-        import colorama
+        try:
+            import colorama
 
-        with colorama.colorama_text():
-            return bot.run(token)
+            with colorama.colorama_text():
+                return bot.run(token)
+        except ImportError:
+            import sys
+
+            if sys.platform.startswith("win"):
+                bot.log.warning("'colorama' not installed, not using colour")
     bot.run(token)
 
 
