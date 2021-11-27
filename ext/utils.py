@@ -25,16 +25,17 @@ class Utility(commands.Cog):
         python_proc = psutil.Process(os.getpid())
         meminfo = python_proc.memory_info()
         uptime = datetime.utcnow() - self.bot.uptime
-        value = f"""```
-        Memory Usage: {meminfo.rss / (1024 ** 2):.2f}MiB
-        Virtual Memory Usage: {meminfo.vms / (1024 ** 2):.2f}MiB
-        Threads: {len(threading.enumerate())}
-        Child Processes: {len(multiprocessing.active_children())}
-        Tasks: {len(asyncio.all_tasks())}
-        Lib: {discord.__name__}=={discord.__version__} by {discord.__author__}
-        Uptime: {humanize.precisedelta(uptime)}
-        ```
-        """
+        value = (
+            "```"
+            f"Memory Usage: {meminfo.rss / (1024 ** 2):.2f}MiB\n"
+            f"Virtual Memory Usage: {meminfo.vms / (1024 ** 2):.2f}MiB\n"
+            f"Threads: {len(threading.enumerate())}\n"
+            f"Child Processes: {len(multiprocessing.active_children())}\n"
+            f"Tasks: {len(asyncio.all_tasks())}\n"
+            f"Lib: {discord.__name__}=={discord.__version__} by {discord.__author__}\n"
+            f"Uptime: {humanize.precisedelta(uptime)}\n"
+            "```"
+        )
         embed.add_field(
             name="Bot Usage",
             value=value,
@@ -42,19 +43,19 @@ class Utility(commands.Cog):
         virtual_memory = psutil.virtual_memory()
         cpus_percent = "\n".join(
             [
-                f"[{index}] {p}%"
+                f"\t[{index}] {p}%"
                 for index, p in enumerate(psutil.cpu_percent(percpu=True))
             ]
         )
-        value = f"""```
-        Available Memory: {virtual_memory.available}
-        Used Memory: {virtual_memory.used}
-        Free Memory: {virtual_memory.free}
-        Cpu Usages: 
-            {cpus_percent}
-        Cpu Frequency (total): {psutil.cpu_freq()}
-        ```
-        """
+        value = (
+            "```"
+            f"Available Memory: {virtual_memory.available}\n"
+            f"Used Memory: {virtual_memory.used}\n"
+            f"Free Memory: {virtual_memory.free}\n"
+            f"Cpu Usages: \n{cpus_percent}\n"
+            f"Cpu Frequency (total): {psutil.cpu_freq().current}\n"
+            "```"
+        )
         embed.add_field(
             name="System Info",
             value=value,
