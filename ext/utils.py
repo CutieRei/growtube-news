@@ -49,9 +49,9 @@ class Utility(commands.Cog):
         )
         value = (
             "```"
-            f"Available Memory: {virtual_memory.available}\n"
-            f"Used Memory: {virtual_memory.used}\n"
-            f"Free Memory: {virtual_memory.free}\n"
+            f"Available Memory: {virtual_memory.available / (1024 ** 2):.2f} MiB\n"
+            f"Used Memory: {virtual_memory.used / (1024 ** 2):.2f} MiB\n"
+            f"Free Memory: {virtual_memory.free / (1024 ** 2):.2f} MiB\n"
             f"Cpu Usages: \n{cpus_percent}\n"
             f"Cpu Frequency (total): {psutil.cpu_freq().current} MHz\n"
             "```"
