@@ -25,7 +25,7 @@ class GrowTube(commands.Bot):
                 use_colours=options.pop("use_colour", True),
             )
         )
-        # self.db = storage.PostgresStorage(options.pop("dsn"))
+        self.db = storage.PostgresStorage(options.pop("dsn"))
         self.CHANNEL_LOG = options.pop("channel_log", None)
         self.log = logging.getLogger(__name__)
         self.log.setLevel(logging.DEBUG if debug else logging.INFO)
