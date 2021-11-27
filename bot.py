@@ -40,9 +40,15 @@ class GrowTube(commands.Bot):
         await super().start(*args, **kwargs)
 
     async def close(self):
-        await asyncio.gather(
-            self.db.close(), self.http_session.close(), super().close()
+        self.log.info("Logging out now")
+        results = await asyncio.gather(
+            self.db.close(), self.http_session.close(), super().close(), return_exceptions=True
         )
+        for res in results:
+            if isinstance(res, BaseException):
+                self.log.exception("A coroutine raised an error while handling close", exc_info=res)
+        self.log.info("Bot closed")
+
 
 
 class NotPermittedForPublish(commands.CheckFailure):
