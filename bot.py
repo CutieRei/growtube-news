@@ -12,6 +12,7 @@ from datetime import datetime
 
 psutil.cpu_percent()
 
+
 class GrowTube(commands.Bot):
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(
@@ -43,13 +44,17 @@ class GrowTube(commands.Bot):
     async def close(self):
         self.log.info("Logging out now")
         results = await asyncio.gather(
-            self.db.close(), self.http_session.close(), super().close(), return_exceptions=True
+            self.db.close(),
+            self.http_session.close(),
+            super().close(),
+            return_exceptions=True,
         )
         for res in results:
             if isinstance(res, BaseException):
-                self.log.exception("A coroutine raised an error while handling close", exc_info=res)
+                self.log.exception(
+                    "A coroutine raised an error while handling close", exc_info=res
+                )
         self.log.info("Bot closed")
-
 
 
 class NotPermittedForPublish(commands.CheckFailure):

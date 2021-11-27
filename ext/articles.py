@@ -110,7 +110,11 @@ async def broadcast(chtype: int, ctx: commands.Context, *args, **kwargs):
                 channel.webhook, channel.token, session=bot.http_session
             )
             await webhook.send(
-                username=bot.user.name, avatar_url=bot.user.avatar.url, allowed_mentions=discord.AllowedMentions.none(), *args, **kwargs
+                username=bot.user.name,
+                avatar_url=bot.user.avatar.url,
+                allowed_mentions=discord.AllowedMentions.none(),
+                *args,
+                **kwargs,
             )
         except Exception as e:
             print(repr(e))
