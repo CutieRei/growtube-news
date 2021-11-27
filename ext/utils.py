@@ -27,7 +27,7 @@ class Utility(commands.Cog):
         uptime = datetime.utcnow() - self.bot.uptime
         embed.add_field(
             name="Bot Usage",
-            value=f"""
+            value=f"""```
             Memory Usage: {meminfo.rss / (1024 ** 2):.2f}MiB
             Virtual Memory Usage: {meminfo.vms / (1024 ** 2):.2f}MiB
             Threads: {len(threading.enumerate())}
@@ -35,6 +35,7 @@ class Utility(commands.Cog):
             Tasks: {len(asyncio.all_tasks())}
             Lib: {discord.__name__}=={discord.__version__} by {discord.__author__}
             Uptime: {humanize.precisedelta(uptime)}
+            ```
             """,
         )
         virtual_memory = psutil.virtual_memory()
@@ -46,14 +47,15 @@ class Utility(commands.Cog):
         )
         embed.add_field(
             name="System Info",
-            value=f"""
-        Available Memory: {virtual_memory.available}
-        Used Memory: {virtual_memory.used}
-        Free Memory: {virtual_memory.free}
-        Cpu Usages: 
-            {cpus_percent}
-        Cpu Frequency (total): {psutil.cpu_freq()}
-        """,
+            value=f"""```
+            Available Memory: {virtual_memory.available}
+            Used Memory: {virtual_memory.used}
+            Free Memory: {virtual_memory.free}
+            Cpu Usages: 
+                {cpus_percent}
+            Cpu Frequency (total): {psutil.cpu_freq()}
+            ```
+            """,
         )
         await ctx.send(embed=embed)
 
