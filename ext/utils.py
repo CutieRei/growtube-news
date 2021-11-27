@@ -53,7 +53,7 @@ class Utility(commands.Cog):
             f"Used Memory: {virtual_memory.used}\n"
             f"Free Memory: {virtual_memory.free}\n"
             f"Cpu Usages: \n{cpus_percent}\n"
-            f"Cpu Frequency (total): {psutil.cpu_freq().current}\n"
+            f"Cpu Frequency (total): {psutil.cpu_freq().current} MHz\n"
             "```"
         )
         embed.add_field(
