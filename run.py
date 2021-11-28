@@ -1,5 +1,4 @@
 import click
-import logging
 from bot import get_bot
 
 

@@ -64,7 +64,7 @@ class ErrorHandler(commands.Cog):
                         )
                     )
                 ]
-                if ctx.author in ctx.bot.owner_ids:
+                if ctx.author.id in ctx.bot.owner_ids:
                     tasks.append(ctx.message.add_reaction("\U0000203c"))
                 return await gather(tasks)
 
