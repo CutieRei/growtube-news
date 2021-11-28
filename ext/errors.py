@@ -53,8 +53,9 @@ class ErrorHandler(commands.Cog):
             tb = traceback.format_exception(type(error), error, error.__traceback__)
             bot: commands.Bot = ctx.bot
             channel = bot.get_channel(ctx.bot.CHANNEL_LOG)
+            tasks = []
             if channel:
-                tasks = [
+                tasks.append(
                     channel.send(
                         "command: `{}`\nauthor: `{}`\nwhen: <t:{}:F>\n```py\n{}```".format(
                             ctx.command.qualified_name,
@@ -63,10 +64,10 @@ class ErrorHandler(commands.Cog):
                             "".join(tb),
                         )
                     )
-                ]
-                if ctx.author.id in ctx.bot.owner_ids:
-                    tasks.append(ctx.message.add_reaction("\U0000203c"))
-                return await gather(tasks)
+                )
+            if ctx.author.id in ctx.bot.owner_ids:
+                tasks.append(ctx.message.add_reaction("\U0000203c"))
+            return await gather(*tasks)
 
 
 def setup(bot: GrowTube):
