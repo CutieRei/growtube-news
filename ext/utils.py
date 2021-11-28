@@ -17,7 +17,8 @@ class Utility(commands.Cog):
     @commands.command()
     async def uptime(self, ctx):
         time = datetime.utcnow() - self.bot.uptime
-        await ctx.send(f"Bot has been up for **{humanize.precisedelta(time)}**")
+        time = humanize.precisedelta(time, format="%d")
+        await ctx.send(f"Bot has been up for **{time}**")
 
     @commands.command()
     async def info(self, ctx):
@@ -25,6 +26,7 @@ class Utility(commands.Cog):
         python_proc = psutil.Process(os.getpid())
         meminfo = python_proc.memory_info()
         uptime = datetime.utcnow() - self.bot.uptime
+        uptime = humanize.precisedelta(uptime, minimum_unit="microseconds")
         value = (
             "```"
             f"Memory Usage: {meminfo.rss / (1024 ** 2):.2f}MiB\n"
@@ -33,7 +35,7 @@ class Utility(commands.Cog):
             f"Child Processes: {len(multiprocessing.active_children())}\n"
             f"Tasks: {len(asyncio.all_tasks())}\n"
             f"Lib: {discord.__name__}=={discord.__version__} by {discord.__author__}\n"
-            f"Uptime: {humanize.precisedelta(uptime)}\n"
+            f"Uptime: {uptime}\n"
             "```"
         )
         embed.add_field(

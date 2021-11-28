@@ -302,7 +302,10 @@ class Articles(commands.Cog):
 
     @set.command(name="announcement")
     async def set_announcement(
-        self, ctx: commands.Context[GrowTube], channel: TextChannel, webhook: Optional[int] = None
+        self,
+        ctx: commands.Context[GrowTube],
+        channel: TextChannel,
+        webhook: Optional[int] = None,
     ):
         """
         Set `Growtopia Announcement, Growtopia News, Growtube News` news to be sent to this channel.
@@ -311,7 +314,10 @@ class Articles(commands.Cog):
 
     @set.command(name="contest")
     async def set_contest(
-        self, ctx: commands.Context[GrowTube], channel: TextChannel, webhook: Optional[int] = None
+        self,
+        ctx: commands.Context[GrowTube],
+        channel: TextChannel,
+        webhook: Optional[int] = None,
     ):
         """
         Set `VOTW, WOTD` news to be sent to this channel.
@@ -320,7 +326,10 @@ class Articles(commands.Cog):
 
     @set.command(name="growtopia-community", aliases=["gt-community"])
     async def set_growtopia_community(
-        self, ctx: commands.Context[GrowTube], channel: TextChannel, webhook: Optional[int] = None
+        self,
+        ctx: commands.Context[GrowTube],
+        channel: TextChannel,
+        webhook: Optional[int] = None,
     ):
         """
         Set Growtopia Community `Forums, Guidebook, Suggestions` news to be sent to this channel.
