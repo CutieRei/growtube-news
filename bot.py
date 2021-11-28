@@ -1,4 +1,5 @@
 import aiohttp
+import asyncpg
 import logs
 import logging
 import storage
@@ -29,14 +30,15 @@ class GrowTube(commands.Bot):
                 use_colours=options.pop("use_colour", True),
             )
         )
-        self.db = storage.PostgresStorage(options.pop("dsn"))
+        self.pool = asyncpg.create_pool(options.pop("dsn"))
+        self.db = storage.PostgresStorage(self.pool)
         self.CHANNEL_LOG = options.pop("channel_log", None)
         self.log = logging.getLogger(__name__)
         self.log.setLevel(logging.DEBUG if debug else logging.INFO)
         self.log.addHandler(sh)
 
     async def start(self, *args, **kwargs):
-        await self.db
+        await self.pool
         self.http_session = aiohttp.ClientSession()
         self.uptime = datetime.utcnow()
         await super().start(*args, **kwargs)
@@ -44,7 +46,7 @@ class GrowTube(commands.Bot):
     async def close(self):
         self.log.info("Logging out now")
         results = await asyncio.gather(
-            self.db.close(),
+            self.pool.close(),
             self.http_session.close(),
             super().close(),
             return_exceptions=True,
@@ -100,8 +102,7 @@ def get_bot(use_colour: bool = True):
         except Exception as exc:
             asyncio.create_task(_ext_err(exc))
 
-    if config["debug"]:
-        bot.load_extension("jishaku")
+    bot.load_extension("jishaku")
 
     @bot.listen()
     async def on_ready():

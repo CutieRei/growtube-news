@@ -1,4 +1,4 @@
-from typing import Coroutine, List, Mapping, Optional, Union
+from typing import Coroutine, Dict, List, Mapping, Optional, Set, Union
 from discord.ext import commands
 import discord
 import datetime
@@ -30,7 +30,7 @@ class Help(commands.HelpCommand):
     async def send_bot_help(
         self, mapping: Mapping[Optional[commands.Cog], List[commands.Command]]
     ):
-        valid_commands = {}
+        valid_commands: Dict[Optional[commands.Cog], Set[commands.Command]] = {}
         for key, value in mapping.items():
             _commands = set()
             for cmd in value:
@@ -41,16 +41,18 @@ class Help(commands.HelpCommand):
                 valid_commands[key] = _commands
         embed = discord.Embed(
             title="List of commands and categories",
-            description="\n".join(
-                "**{}**\n{}".format(
-                    "Uncategorized" if key is None else key.qualified_name,
-                    ("\n".join(i.name for i in value)) + "\n",
-                )
-                for key, value in valid_commands.items()
-            ),
             color=embed_color,
             timestamp=datetime.datetime.utcnow(),
         )
+        for cog, _commands in valid_commands.items():
+            if cog is None:
+                cog = "Not Categorized"
+            else:
+                cog = cog.qualified_name
+            embed.add_field(
+                name=f"**{cog}**",
+                value="```\n{}\n```".format(", ".join(i.name for i in _commands)),
+            )
         await self.get_destination().send(embed=embed)
 
     async def send_cog_help(self, cog: commands.Cog):
