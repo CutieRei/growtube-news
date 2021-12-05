@@ -35,7 +35,7 @@ class ErrorHandler(commands.Cog):
     ):
         error = getattr(error, "original", error)
 
-        if ctx.command.has_error_handler():
+        if ctx.command and ctx.command.has_error_handler():
             return
 
         if cog := ctx.cog:
