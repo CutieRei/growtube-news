@@ -2,6 +2,7 @@ from discord.ext import commands
 from discord.utils import utcnow
 import aiohttp
 import asyncpg
+import discord
 import logs
 import logging
 import storage
@@ -80,6 +81,8 @@ def get_bot(use_colour: bool = True):
         dotenv.load_dotenv()
         token = os.getenv("TOKEN")
 
+    intents = discord.Intents.default()
+    intents.members = True
     bot = GrowTube(
         command_prefix=config["prefix"],
         owner_ids=config["owners"],
@@ -87,6 +90,7 @@ def get_bot(use_colour: bool = True):
         channel_log=config["channel_log"],
         debug=config.get("debug", False),
         use_colour=use_colour,
+        intents=intents,
     )
 
     async def _ext_err(e: Exception):
