@@ -1,3 +1,5 @@
+from discord.ext import commands
+from discord.utils import utcnow
 import aiohttp
 import asyncpg
 import logs
@@ -8,8 +10,6 @@ import json
 import asyncio
 import traceback
 import psutil
-from discord.ext import commands
-from datetime import datetime
 
 psutil.cpu_percent()
 
@@ -40,7 +40,7 @@ class GrowTube(commands.Bot):
     async def start(self, *args, **kwargs):
         await self.pool
         self.http_session = aiohttp.ClientSession()
-        self.uptime = datetime.utcnow()
+        self.uptime = utcnow()
         await super().start(*args, **kwargs)
 
     async def close(self):

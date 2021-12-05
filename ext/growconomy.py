@@ -1,9 +1,9 @@
-from typing import NoReturn, Optional, Tuple, Union
-import asyncpg
-import discord
 from discord.colour import Color
 from discord.ext import commands
 from bot import GrowTube
+from typing import NoReturn, Optional, Tuple, Union
+import asyncpg
+import discord
 
 currency_name = "Growcoin"
 

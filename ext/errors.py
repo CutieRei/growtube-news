@@ -12,8 +12,8 @@ from discord.ext.commands.errors import (
     NoPrivateMessage,
     NotOwner,
 )
+from discord.utils import utcnow
 import traceback
-import datetime
 
 _IGNORED_EXCEPTIONS = (
     CommandNotFound,
@@ -59,7 +59,7 @@ class ErrorHandler(commands.Cog):
                         "command: `{}`\nauthor: `{}`\nwhen: <t:{}:F>\n```py\n{}```".format(
                             ctx.command.qualified_name,
                             ctx.author,
-                            int(datetime.datetime.utcnow().timestamp()),
+                            int(utcnow().timestamp()),
                             "".join(tb),
                         )
                     )

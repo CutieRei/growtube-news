@@ -1,5 +1,5 @@
-import click
 from bot import get_bot
+import click
 
 
 @click.command()

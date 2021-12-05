@@ -1,4 +1,3 @@
-import asyncpg
 from typing import (
     Literal,
     Optional,
@@ -6,6 +5,7 @@ from typing import (
     Tuple,
     Union,
 )
+import asyncpg
 
 
 class Channel:

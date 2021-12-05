@@ -1,8 +1,8 @@
-import random
-import discord
 from typing import Optional
 from discord.ext import commands
 from bot import GrowTube
+import random
+import discord
 
 
 class Random(commands.Cog):
