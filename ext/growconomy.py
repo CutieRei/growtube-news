@@ -12,15 +12,17 @@ async def check(ctx: commands.Context[GrowTube]) -> Union[bool, NoReturn]:
     result = await ctx.bot.pool.fetchrow(
         "SELECT * FROM beta_tester WHERE user_id=$1", ctx.author.id
     )
-    return result or ctx.author.id in ctx.bot.owner_ids
+    return (result is not None) or (ctx.author.id in ctx.bot.owner_ids)
 
 
 class Groconomy(commands.Cog):
     def __init__(self, bot: GrowTube) -> None:
         self.bot = bot
 
+    async def cog_check(self, ctx: commands.Context[GrowTube]):
+        return await check(ctx)
+
     @commands.command()
-    @commands.check(check)
     async def bank(self, ctx: commands.Context):
         result: Optional[Tuple[int, int]] = await self.bot.pool.fetchrow(
             "SELECT currency FROM users WHERE id=$1", ctx.author.id
