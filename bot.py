@@ -1,10 +1,18 @@
+from discord.ext import commands
+from discord.utils import utcnow
 import aiohttp
+import asyncpg
+import discord
+import logs
+import logging
 import storage
 import os
 import json
 import asyncio
 import traceback
-from discord.ext import commands
+import psutil
+
+psutil.cpu_percent()
 
 
 class GrowTube(commands.Bot):
@@ -15,25 +23,48 @@ class GrowTube(commands.Bot):
             description=description,
             **options,
         )
-        self.db = storage.PostgresStorage(options.pop("dsn"))
+        debug = options.pop("debug", False)
+        sh = logs.ClickStreamHandler()
+        sh.setFormatter(
+            logs.ColouredFormatter(
+                "[%(levelname)s][%(filename)s] %(message)s",
+                use_colours=options.pop("use_colour", True),
+            )
+        )
+        self.pool = asyncpg.create_pool(options.pop("dsn"))
+        self.db = storage.PostgresStorage(self.pool)
         self.CHANNEL_LOG = options.pop("channel_log", None)
+        self.log = logging.getLogger(__name__)
+        self.log.setLevel(logging.DEBUG if debug else logging.INFO)
+        self.log.addHandler(sh)
 
     async def start(self, *args, **kwargs):
-        await self.db
+        await self.pool
         self.http_session = aiohttp.ClientSession()
+        self.uptime = utcnow()
         await super().start(*args, **kwargs)
 
     async def close(self):
-        await asyncio.gather(
-            self.db.close(), self.http_session.close(), super().close()
+        self.log.info("Logging out now")
+        results = await asyncio.gather(
+            self.pool.close(),
+            self.http_session.close(),
+            super().close(),
+            return_exceptions=True,
         )
+        for res in results:
+            if isinstance(res, BaseException):
+                self.log.exception(
+                    "A coroutine raised an error while handling close", exc_info=res
+                )
+        self.log.info("Bot closed")
 
 
 class NotPermittedForPublish(commands.CheckFailure):
     pass
 
 
-def get_bot():
+def get_bot(use_colour: bool = True):
 
     config = None
     config_file = (
@@ -50,11 +81,16 @@ def get_bot():
         dotenv.load_dotenv()
         token = os.getenv("TOKEN")
 
+    intents = discord.Intents.default()
+    intents.members = True
     bot = GrowTube(
         command_prefix=config["prefix"],
         owner_ids=config["owners"],
         dsn=config["dsn"],
         channel_log=config["channel_log"],
+        debug=config.get("debug", False),
+        use_colour=use_colour,
+        intents=intents,
     )
 
     async def _ext_err(e: Exception):
@@ -70,30 +106,15 @@ def get_bot():
         except Exception as exc:
             asyncio.create_task(_ext_err(exc))
 
-    if config["debug"]:
-        bot.load_extension("jishaku")
+    bot.load_extension("jishaku")
 
     @bot.listen()
     async def on_ready():
-        print("Logged in")
-
-    import aiohttp
-
-    async def _job():
-        async with aiohttp.ClientSession() as sess:
-            await sess.post(
-                "http://localhost:8000/restart", data={"token": bot.http.token}
-            )
-
-    @bot.command()
-    @commands.is_owner()
-    async def restart(ctx):
-        await ctx.message.add_reaction("\U00002705")
-        asyncio.create_task(_job())
+        bot.log.info("Logged in")
 
     return bot, token
 
 
 if __name__ == "__main__":
     bot, token = get_bot()
-    # bot.run(token)
+    bot.run(token)

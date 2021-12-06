@@ -1,30 +1,26 @@
 [tool.poetry]
 name = "gnews"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["ReyterYT <reyteryt5@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-uvicorn = [
-    {version = "0.14.0", extras = ["standard"], platform = "linux"},
-    {version = "0.14.0", platform = "*"}
-]
-fastapi = "0.68.0"
+python = "^3.9"
 "discord.py" = {git = "https://github.com/Rapptz/discord.py"}
 humanize = "3.11.0"
 python-dotenv = "0.19.0"
-jishaku = "2.2.0"
+jishaku = {git = "https://github.com/Gorialis/jishaku"}
 psutil = "5.8.0"
-asyncpg = { version = "0.24.0", optional = true }
-python-multipart = "0.0.5"
+asyncpg = "0.24.0"
+uvloop = {version = "0.16.0", optional = true}
 
 [tool.poetry.dev-dependencies]
 black = "^21.11b1"
+pylint = "^2.12.2"
 
 [tool.poetry.extras]
-pg = ["asyncpg"]
+uvloop = ["uvloop"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

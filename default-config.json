@@ -6,7 +6,9 @@
     "ext": [
         "help",
         "articles",
-        "errors"
+        "errors",
+        "utils",
+        "random"
     ],
     "owners": [],
     "dsn": "postgres://postgres@localhost:5432/growtube-news"
