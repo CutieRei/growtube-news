@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 from discord.ext import commands
 from bot import GrowTube
 import random
@@ -10,7 +10,9 @@ class Random(commands.Cog):
         self.bot = bot
 
     @commands.command(usage="<things...>")
-    async def pick(self, ctx: commands.Context, *things: str):
+    async def pick(self, ctx: commands.Context, *things: Tuple[str]):
+        if not str:
+            return
         await ctx.send(
             random.choice(things), allowed_mentions=discord.AllowedMentions.none()
         )
