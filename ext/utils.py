@@ -23,7 +23,11 @@ class Utility(commands.Cog):
             if not records:
                 return await ctx.send("0 row")
             headers = records[0].keys()
-            await ctx.reply("```\n"+tabulate((i.values() for i in records), headers, tablefmt="psql")+"```")
+            await ctx.reply(
+                "```\n"
+                + tabulate((i.values() for i in records), headers, tablefmt="psql")
+                + "```"
+            )
         except Exception as e:
             await ctx.send(e)
 
