@@ -1,4 +1,5 @@
 from discord.ext import commands
+from tabulate import tabulate
 from bot import GrowTube
 import asyncio
 import threading
@@ -12,6 +13,19 @@ import multiprocessing
 class Utility(commands.Cog):
     def __init__(self, bot: GrowTube) -> None:
         self.bot = bot
+
+    @commands.command()
+    @commands.is_owner()
+    async def sql(self, ctx, *, query):
+        query = query.strip("```") if query.startswith("```") else query
+        try:
+            records = await self.bot.pool.fetch(query)
+            if not records:
+                return await ctx.send("0 row")
+            headers = records[0].keys()
+            await ctx.reply("```\n"+tabulate((i.values() for i in records), headers, tablefmt="psql")+"```")
+        except Exception as e:
+            await ctx.send(e)
 
     @commands.command()
     async def uptime(self, ctx):
