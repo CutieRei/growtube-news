@@ -117,7 +117,7 @@ def get_bot(use_colour: bool = True):
     @bot.listen()
     async def on_message_edit(before, after):
         if before.content != after.content:
-            await bot.process_commands(after.content)
+            await bot.process_commands(after)
 
     return bot, token
 
