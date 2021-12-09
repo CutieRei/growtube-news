@@ -296,7 +296,3 @@ class Growconomy(Trading, commands.Cog):
             )
             await ctx.send(f"Transfered **{amount:,}** {currency_emoji} to **{user}**")
 
-
-def setup(bot: GrowTube) -> None:
-    bot.add_cog(Growconomy(bot))
-    bot.log.info(f"Loaded {__file__}")
