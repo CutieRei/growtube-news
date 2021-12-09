@@ -39,7 +39,7 @@ class Utility(commands.Cog):
 
     @commands.command()
     async def info(self, ctx):
-        embed = discord.Embed(color=discord.Color.random())
+        embed = discord.Embed(color=self.bot.EMBED_COLOUR)
         python_proc = psutil.Process(os.getpid())
         meminfo = python_proc.memory_info()
         uptime = discord.utils.utcnow() - self.bot.uptime

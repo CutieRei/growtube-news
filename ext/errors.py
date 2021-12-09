@@ -62,7 +62,11 @@ class ErrorHandler(commands.Cog):
             tb = traceback.format_exception(type(error), error, error.__traceback__)
             bot: commands.Bot = ctx.bot
             channel = bot.get_channel(ctx.bot.CHANNEL_LOG)
-            tasks = []
+            tasks = [
+                ctx.reply(
+                    f"Oops an error has occured **{type(error).__name__}: {str(error)}**"
+                )
+            ]
             if channel:
                 tasks.append(
                     channel.send(

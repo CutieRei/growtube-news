@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional
 from discord.ext import commands
 from bot import GrowTube
 import random
@@ -10,8 +10,8 @@ class Random(commands.Cog):
         self.bot = bot
 
     @commands.command(usage="<things...>")
-    async def pick(self, ctx: commands.Context, *things: Tuple[str]):
-        if not str:
+    async def pick(self, ctx: commands.Context, *things: str):
+        if not things:
             return
         await ctx.send(
             random.choice(things), allowed_mentions=discord.AllowedMentions.none()
@@ -21,7 +21,7 @@ class Random(commands.Cog):
     async def avatar(self, ctx: commands.Context, who: Optional[discord.Member] = None):
         who = who or ctx.author
         embed = discord.Embed(
-            title=f"Avatar for {who}", url=who.avatar.url, color=who.color
+            title=f"Avatar for {who}", url=who.avatar.url, color=self.bot.EMBED_COLOUR
         )
         embed.set_image(url=who.avatar.url)
         await ctx.send(embed=embed)

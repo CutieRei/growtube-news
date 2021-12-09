@@ -16,6 +16,8 @@ psutil.cpu_percent()
 
 
 class GrowTube(commands.Bot):
+    EMBED_COLOUR = discord.Color(15007744)
+
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(
             command_prefix,
