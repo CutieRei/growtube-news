@@ -113,13 +113,11 @@ def get_bot(use_colour: bool = True):
     @bot.listen()
     async def on_ready():
         bot.log.info("Logged in")
-    
+
     @bot.listen()
     async def on_message_edit(self, before, after):
         if before.content != after.content:
             await bot.process_commands(after.content)
-    
-    
 
     return bot, token
 
