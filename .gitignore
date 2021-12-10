@@ -6,3 +6,4 @@ _test.py
 ignore**
 config.json
 *.swp
+.idea
