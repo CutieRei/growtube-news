@@ -10,7 +10,7 @@ import discord
 
 currency_name = "Growcoin"
 embed_color = GrowTube.EMBED_COLOUR
-currency_emoji = "<:growcoin:918318647754231878>"
+currency_emoji = "<:growcoin:918403481419788349>"
 
 
 async def check(ctx: commands.Context[GrowTube]) -> Union[bool, NoReturn]:
@@ -42,14 +42,14 @@ class Growconomy(Trading, commands.Cog):
         super().__init__()
 
     async def cog_check(self, ctx: commands.Context[GrowTube]):
-        _ignored_cmd = {"register", "market"}
+        _ignored_cmd = {self.register, self.market}
         if await self.bot.pool.fetchrow(
             "SELECT 1 FROM users WHERE id=$1", ctx.author.id
         ):
-            if ctx.command.name == "register":
+            if ctx.command == self.register:
                 return False
             return True
-        if ctx.command.name in _ignored_cmd:
+        if ctx.command in _ignored_cmd:
             return await check(ctx)
 
     @commands.command(aliases=["bal", "balance"])
