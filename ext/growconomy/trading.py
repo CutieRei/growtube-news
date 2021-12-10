@@ -238,7 +238,6 @@ class Trading:
                                     deletes,
                                 )
                             )
-                        await ctx.send([updates, update_currency, inserts, deletes])
                         await gather(*tasks)
                         await ctx.send(
                             f"{ctx.author} sucessfully traded with {self.bot.get_user(user2)}"
@@ -254,6 +253,8 @@ class Trading:
 
     @trade.command()
     async def add(self, ctx, amount: Optional[int] = 1, *, item_name: str):
+        if amount < 0:
+            return
         session = self.users[ctx.author.id]
         if session.is_accepting:
             return
