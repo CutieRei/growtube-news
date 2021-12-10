@@ -5,7 +5,15 @@ import discord
 
 
 class ConfirmView(ui.View):
-    def __init__(self, context: commands.Context, /, *, responded=None, delete_after=True, **kwargs: Any):
+    def __init__(
+        self,
+        context: commands.Context,
+        /,
+        *,
+        responded=None,
+        delete_after=True,
+        **kwargs: Any,
+    ):
         super().__init__(**kwargs)
         self.ctx = context
         self._result = None
@@ -21,12 +29,10 @@ class ConfirmView(ui.View):
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if self.responded.id != getattr(interaction.user, "id", None):
             await interaction.response.send_message(
-                f"Only {self.responded} can respond to this message!",
-                ephemeral=True
+                f"Only {self.responded} can respond to this message!", ephemeral=True
             )
             return False
         return True
-
 
     async def stopping(self):
         if self.delete_after:

@@ -9,6 +9,7 @@ from .constants import *
 import asyncpg
 import discord
 
+
 async def check(ctx: commands.Context[GrowTube]) -> Union[bool, NoReturn]:
     result = await ctx.bot.pool.fetchrow(
         "SELECT * FROM beta_tester WHERE user_id=$1", ctx.author.id
@@ -291,4 +292,3 @@ class Growconomy(Trading, commands.Cog):
                 ctx.author.id,
             )
             await ctx.send(f"Transfered **{amount:,}** {currency_emoji} to **{user}**")
-
