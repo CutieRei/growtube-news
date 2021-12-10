@@ -172,16 +172,23 @@ class Trading:
                                 ctx.author.id,
                                 user2,
                             )
-                            if c1:
+
+                            if c1 and c2:
                                 cr1 = find(lambda x: x[0] == ctx.author.id, currencies)
-                                update_currency.append(
-                                    [cr1[1] - c1.amount, ctx.author.id]
-                                )
-                                update_currency.append([c1.amount, user2])
-                            if c2:
                                 cr2 = find(lambda x: x[0] == user2, currencies)
-                                update_currency.append([cr2[1] - c2.amount, user2])
-                                update_currency.append([c2.amount, ctx.author.id])
+                                t1 = cr1[1] - c1.amount + c2.amount
+                                t2 = cr2[1] - c2.amount + c1.amount
+                                update_currency.append([t1, ctx.author.id])
+                                update_currency.append([t2, user2])
+                            else:
+                                if c1:
+                                    cr1 = find(lambda x: x[0] == ctx.author.id, currencies)
+                                    update_currency.append([cr1[1] - c1.amount, ctx.author.id])
+                                    update_currency.append([cr1[1] - c1.amount, user2])
+                                if c2:
+                                    cr2 = find(lambda x: x[0] == user2, currencies)
+                                    update_currency.append([cr2[1] - c2.amount, user2])
+                                    update_currency.append([cr2[1] - c2.amount, ctx.author.id])
 
                         def compute(user_id: int, user_id2: int, inv: list):
                             for item in inv:
