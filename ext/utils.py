@@ -17,7 +17,7 @@ class Utility(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def sql(self, ctx, *, query):
-        query = query.strip("```") if query.startswith("```") else query
+        query = query.strip("```")
         try:
             records = await self.bot.pool.fetch(query)
             if not records:

@@ -5,13 +5,9 @@ from bot import GrowTube
 from discord.utils import utcnow
 from typing import NoReturn, Optional, Tuple, Union
 from .trading import Trading
+from .constants import *
 import asyncpg
 import discord
-
-currency_name = "Growcoin"
-embed_color = GrowTube.EMBED_COLOUR
-currency_emoji = "<:growcoin:918403481419788349>"
-
 
 async def check(ctx: commands.Context[GrowTube]) -> Union[bool, NoReturn]:
     result = await ctx.bot.pool.fetchrow(

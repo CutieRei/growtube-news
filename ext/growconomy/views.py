@@ -1,8 +1,7 @@
 from typing import Any, Optional
-
-import discord
 from discord import ui
 from discord.ext import commands
+import discord
 
 
 class ConfirmView(ui.View):
