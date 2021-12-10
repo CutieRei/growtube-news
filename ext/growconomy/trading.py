@@ -164,9 +164,9 @@ class Trading:
                             ctx.author.id: {i[0].lower(): i for i in u1_inv},
                             user2: {i[0].lower(): i for i in u2_inv},
                         }
-                        if "" in inv[ctx.author.id] or "" in inv[user2]:
-                            c1 = items[ctx.author.id].pop("", None)
-                            c2 = items[user2].pop("", None)
+                        if None in items[ctx.author.id] or None in items[user2]:
+                            c1 = items[ctx.author.id].pop(None, None)
+                            c2 = items[user2].pop(None, None)
                             currencies = await conn.fetch(
                                 "SELECT id, currency FROM users WHERE id in ($1, $2)",
                                 ctx.author.id,
@@ -184,10 +184,10 @@ class Trading:
                                 update_currency.append([c2.amount, ctx.author.id])
 
                         def compute(user_id: int, user_id2: int, inv: list):
-                            for item in u1_inv:
+                            for item in inv:
                                 amount: int = item[2]
                                 item_id: int = item[1]
-                                item = items[user_id].get(item.lower())
+                                item = items[user_id].get(item[0].lower())
                                 if item is not None:
                                     amount_left = amount - item.amount
                                     if amount_left > 0:
@@ -238,7 +238,7 @@ class Trading:
                                     deletes,
                                 )
                             )
-
+                        await ctx.send([updates, update_currency, inserts, deletes])
                         await gather(*tasks)
                         await ctx.send(
                             f"{ctx.author} sucessfully traded with {self.bot.get_user(user2)}"
@@ -266,12 +266,12 @@ class Trading:
                 return await ctx.reply("You don't have enough {currency_name}")
             items = self.users[ctx.author.id].items[ctx.author.id]
             try:
-                item = items[item_name]
+                item = items[None]
                 if item.amount + amount > currency:
                     return await ctx.reply(f"You don't have enough {currency_name}")
                 item.amount += item.amount
             except Exception:
-                items[item_name] = TradeItem(type=1, amount=amount)
+                items[None] = TradeItem(type=1, amount=amount)
 
             await self._update_message(ctx, self.users[ctx.author.id])
             return await ctx.reply(f"Added **{amount}** {currency_name}")
