@@ -106,7 +106,7 @@ def get_bot(use_colour: bool = True):
         try:
             bot.load_extension(config["ext_dir"] + "." + extension)
         except Exception as exc:
-            asyncio.create_task(_ext_err(exc))
+            bot.loop.create_task(_ext_err(exc))
 
     bot.load_extension("jishaku")
 
