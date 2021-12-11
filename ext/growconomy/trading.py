@@ -279,7 +279,7 @@ class Trading:
     @trade.command()
     @commands.check(_check)
     async def add(self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None):
-        if amount < 0:
+        if amount < 0 or amount == 0:
             return
         session = self.users[ctx.author.id]
         if session.is_accepting:
@@ -332,7 +332,7 @@ class Trading:
     @trade.command()
     @commands.check(_check)
     async def remove(self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None):
-        if amount < 0:
+        if amount < 0 or amount == 0:
             return
         session = self.users[ctx.author.id]
         if session.is_accepting:
