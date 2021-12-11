@@ -8,7 +8,8 @@
         "articles",
         "errors",
         "utils",
-        "random"
+        "random",
+        "growconomy"
     ],
     "owners": [],
     "dsn": "postgres://postgres@localhost:5432/growtube-news"
