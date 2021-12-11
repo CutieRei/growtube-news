@@ -16,10 +16,28 @@ Clone this repository
 git clone https://github.com/ReyterYT/growtube-news.git
 ```
 
-Create venv(Optional but recommended)
+Create venv and activate it(Optional but recommended)
 
 ```console
 python3 -m virtualenv venv
+```
+
+Linux
+
+```console
+. venv/bin/activate
+```
+
+or
+
+```console
+source venv/bin/activate
+```
+
+Windows Powershell
+
+```console
+venv\Scripts\activate.ps1
 ```
 
 Install dependencies with poetry
