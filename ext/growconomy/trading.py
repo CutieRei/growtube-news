@@ -197,19 +197,18 @@ class Trading:
                                 update_currency.append([t1, ctx.author.id])
                                 update_currency.append([t2, user2])
                             else:
+                                cr1 = find(lambda x: x[0] == ctx.author.id, currencies)
+                                cr2 = find(lambda x: x[0] == user2, currencies)
+
                                 if c1:
-                                    cr1 = find(
-                                        lambda x: x[0] == ctx.author.id, currencies
-                                    )
                                     update_currency.append(
                                         [cr1[1] - c1.amount, ctx.author.id]
                                     )
-                                    update_currency.append([cr1[1] + c1.amount, user2])
+                                    update_currency.append([cr2[1] + c1.amount, user2])
                                 if c2:
-                                    cr2 = find(lambda x: x[0] == user2, currencies)
                                     update_currency.append([cr2[1] - c2.amount, user2])
                                     update_currency.append(
-                                        [cr2[1] + c2.amount, ctx.author.id]
+                                        [cr1[1] + c2.amount, ctx.author.id]
                                     )
                         def compute(user_id: int, user_id2: int):
                             for item in inv[user_id].values():
@@ -274,7 +273,7 @@ class Trading:
             session.accepted.clear()
             session.cancelled.set()
             await sleep(0)
-            session.cancelled.unset()
+            session.cancelled.clear()
             await ctx.reply("Cancelled")
 
     @trade.command()
