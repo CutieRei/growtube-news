@@ -7,3 +7,4 @@ ignore**
 config.json
 *.swp
 .idea
+.vscode

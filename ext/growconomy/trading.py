@@ -1,4 +1,3 @@
-from asyncio.tasks import gather
 from asyncpg.connection import Connection
 from bot import GrowTube
 from discord.ext import commands
@@ -9,15 +8,13 @@ from discord.utils import find
 from asyncio import Event
 from .views import ConfirmView
 from .constants import *
-from .utils import async_any
+from .utils import async_any, GrowContext
 import dataclasses
 
 
 @dataclasses.dataclass(repr=True, eq=True)
 class TradeItem:
-    type: Literal[0, 1] = dataclasses.field(
-        compare=False
-    )  # 0 for item, 1 for currency
+    type: Literal[0, 1] = dataclasses.field(compare=False)  # 0 for item, 1 for currency
     amount: int = dataclasses.field(compare=False)
     name: Optional[str] = dataclasses.field(default=None)
 
@@ -36,11 +33,11 @@ class TradeSession:
 class Trading:
     bot: GrowTube
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.users: Dict[int, TradeSession] = {}
         self.trades: Dict[str, Tuple[Message, Embed, TradeSession]] = {}
 
-    async def _update_message(self, ctx, session: TradeSession):
+    async def _update_message(self, ctx: GrowContext, session: TradeSession):
         msg, embed = self.trades[session.id][0:2]
         index = session.users.index(ctx.author.id)
         embed.set_field_at(
@@ -58,7 +55,7 @@ class Trading:
         await msg.edit(embed=embed)
 
     @commands.group(invoke_without_command=True)
-    async def trade(self, ctx, user: User = None):
+    async def trade(self, ctx: GrowContext, user: User = None):
         if not ctx.invoked_subcommand:
             if not user:
                 return
@@ -96,13 +93,13 @@ class Trading:
                 self.users[user.id] = session
                 self.trades[session.id] = (msg, embed, session)
 
-        elif ctx.author.id not in self.users:
+        elif ctx.author.id not in self.users and self.trades.get(self.users[ctx.author.id]) is None:
             raise commands.CommandError("You're not trading with anyone right now")
         elif self.trades.get(self.users[ctx.author.id]) is None:
             raise commands.CommandError("You're not trading with anyone right now")
 
     @trade.command()
-    async def cancel(self, ctx):
+    async def cancel(self, ctx: GrowContext):
         session = self.users.pop(ctx.author.id)
         session.users.remove(ctx.author.id)
         data = self.trades.pop(session.id)
@@ -113,7 +110,7 @@ class Trading:
         await msg.reply("Cancelled trade")
 
     @trade.command()
-    async def accept(self, ctx):
+    async def accept(self, ctx: GrowContext):
         session = self.users[ctx.author.id]
         if session.is_accepting and session.user_accepting == ctx.author.id:
             return
@@ -125,7 +122,7 @@ class Trading:
                 return session.accepted.set()
             session.is_accepting = True
             session.user_accepting = ctx.author.id
-            user2 = find(lambda user: user != ctx.author.id, session.users)
+            user2: int = find(lambda user: user != ctx.author.id, session.users)
             await async_any(
                 session.accepted.wait(),
                 session.cancelled.wait(),
@@ -156,7 +153,8 @@ class Trading:
 
                     async with conn.transaction():
                         items = session.items
-                        updates = []
+                        incr_updates = []
+                        decr_updates = []
                         update_currency = []
                         inserts = []
                         deletes = []
@@ -182,70 +180,70 @@ class Trading:
                                 update_currency.append([t2, user2])
                             else:
                                 if c1:
-                                    cr1 = find(lambda x: x[0] == ctx.author.id, currencies)
-                                    update_currency.append([cr1[1] - c1.amount, ctx.author.id])
+                                    cr1 = find(
+                                        lambda x: x[0] == ctx.author.id, currencies
+                                    )
+                                    update_currency.append(
+                                        [cr1[1] - c1.amount, ctx.author.id]
+                                    )
                                     update_currency.append([cr1[1] - c1.amount, user2])
                                 if c2:
                                     cr2 = find(lambda x: x[0] == user2, currencies)
                                     update_currency.append([cr2[1] - c2.amount, user2])
-                                    update_currency.append([cr2[1] - c2.amount, ctx.author.id])
-
-                        def compute(user_id: int, user_id2: int, inv: list):
-                            for item in inv:
+                                    update_currency.append(
+                                        [cr2[1] - c2.amount, ctx.author.id]
+                                    )
+                        def compute(user_id: int, user_id2: int):
+                            for item in inv[user_id].values():
                                 amount: int = item[2]
                                 item_id: int = item[1]
                                 item = items[user_id].get(item[0].lower())
                                 if item is not None:
                                     amount_left = amount - item.amount
                                     if amount_left > 0:
-                                        updates.append([amount_left, item_id, user_id])
+                                        decr_updates.append([item.amount, item_id, user_id])
                                     else:
                                         deletes.append([item_id, user_id])
 
-                                    item_2 = inv[user2].get(item.name.lower())
+                                    item_2 = inv[user_id2].get(item.name.lower())
                                     if item_2 is not None:
-                                        updates.append(
-                                            [item_2[2] + item.amount, item_id, user_id2]
+                                        incr_updates.append(
+                                            [item.amount, item_id, user_id2]
                                         )
                                     else:
                                         inserts.append([item_id, user_id2, item.amount])
 
                         for i in (
-                            [ctx.author.id, user2, u1_inv],
-                            [user2, ctx.author.id, u2_inv],
+                            [ctx.author.id, user2],
+                            [user2, ctx.author.id],
                         ):
-                            compute(i[0], i[1], i[2])
+                            compute(i[0], i[1])
 
-                        tasks = []
-                        if updates:
-                            tasks.append(
-                                conn.executemany(
-                                    "UPDATE inventory SET quantity = $1 WHERE item_id = $2 and user_id = $3",
-                                    updates,
-                                )
+                        if incr_updates:
+                            await conn.executemany(
+                                "UPDATE inventory SET quantity = quantity + $1 WHERE item_id = $2 and user_id = $3",
+                                incr_updates,
+                            )
+                        if decr_updates:
+                                await conn.executemany(
+                                "UPDATE inventory SET quantity  = quantity - $1 WHERE item_id = $2 and user_id = $3",
+                                decr_updates,
                             )
                         if update_currency:
-                            tasks.append(
-                                conn.executemany(
-                                    "UPDATE users SET currency = $1 WHERE id = $2",
-                                    update_currency,
-                                )
+                            await conn.executemany(
+                                "UPDATE users SET currency = $1 WHERE id = $2",
+                                update_currency,
                             )
                         if inserts:
-                            tasks.append(
-                                conn.executemany(
-                                    "INSERT INTO inventory (item_id, user_id, quantity) VALUES ($1, $2, $2)",
+                            await conn.executemany(
+                                    "INSERT INTO inventory (item_id, user_id, quantity) VALUES ($1, $2, $3)",
                                     inserts,
-                                )
                             )
                         if deletes:
-                            tasks.append(
-                                conn.executemany(
-                                    "DELETE FROM inventory WHERE item_id = $1 AND user_id = $2",
-                                    deletes,
-                                )
+                            await conn.executemany(
+                                "DELETE FROM inventory WHERE item_id = $1 AND user_id = $2",
+                                deletes,
                             )
-                        await gather(*tasks)
                         await ctx.send(
                             f"{ctx.author} sucessfully traded with {self.bot.get_user(user2)}"
                         )
@@ -259,14 +257,14 @@ class Trading:
             await ctx.reply("Cancelled")
 
     @trade.command()
-    async def add(self, ctx, amount: Optional[int] = 1, *, item_name: str):
+    async def add(self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None):
         if amount < 0:
             return
         session = self.users[ctx.author.id]
         if session.is_accepting:
             return
         item_name = item_name.lower()
-        if item_name == "currency":
+        if not item_name:
             currency = await self.bot.pool.fetchval(
                 "SELECT currency FROM users WHERE id = $1", ctx.author.id
             )
@@ -278,8 +276,34 @@ class Trading:
                 if item.amount + amount > currency:
                     return await ctx.reply(f"You don't have enough {currency_name}")
                 item.amount += item.amount
-            except Exception:
+            except KeyError:
                 items[None] = TradeItem(type=1, amount=amount)
 
             await self._update_message(ctx, self.users[ctx.author.id])
             return await ctx.reply(f"Added **{amount}** {currency_name}")
+        else:
+            item = await self.bot.pool.fetchrow(
+                """
+                SELECT items.name, inventory.item_id, inventory.quantity FROM inventory
+                INNER JOIN items ON items.id = inventory.item_id
+                WHERE LOWER(items.name) = $1 and inventory.user_id = $2
+                """,
+                item_name,
+                ctx.author.id,
+            )
+            if item is None:
+                return await ctx.reply("You don't have this item")
+            if (item[2] - amount) < 0:
+                return await ctx.reply(f"You don't have enough {item[0]}")
+            name = item[0]
+            real_amount = item[2]
+            try:
+                item = session.items[ctx.author.id][name]
+                if (item.amount + amount) > real_amount:
+                    return await ctx.reply(f"You don't have enough {item[0]}")
+                item.amount += amount
+            except Exception:
+                session.items[ctx.author.id][name] = TradeItem(type=0, amount=amount, name=name)
+            
+            await self._update_message(ctx, self.users[ctx.author.id])
+            return await ctx.reply(f"Added **{amount}** {name}")
