@@ -10,6 +10,6 @@
         "utils",
         "random"
     ],
-    "owners": [],
+    "owners": [591135329117798400, 830248412904947753, 716134528409665586],
     "dsn": "postgres://postgres@localhost:5432/growtube-news"
 }
