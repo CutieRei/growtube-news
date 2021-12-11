@@ -263,8 +263,7 @@ class Trading:
         session = self.users[ctx.author.id]
         if session.is_accepting:
             return
-        item_name = item_name.lower()
-        if not item_name:
+        if item_name is None:
             currency = await self.bot.pool.fetchval(
                 "SELECT currency FROM users WHERE id = $1", ctx.author.id
             )
@@ -282,6 +281,7 @@ class Trading:
             await self._update_message(ctx, self.users[ctx.author.id])
             return await ctx.reply(f"Added **{amount}** {currency_name}")
         else:
+            item_name = item_name.lower()
             item = await self.bot.pool.fetchrow(
                 """
                 SELECT items.name, inventory.item_id, inventory.quantity FROM inventory
