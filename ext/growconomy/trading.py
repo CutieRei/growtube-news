@@ -1,3 +1,4 @@
+from asyncio.tasks import create_task, sleep
 from asyncpg.connection import Connection
 from bot import GrowTube
 from discord.ext import commands
@@ -29,6 +30,13 @@ class TradeSession:
     accepted: Event = dataclasses.field(default_factory=Event)
     cancelled: Event = dataclasses.field(default_factory=Event)
 
+def _check(ctx: GrowContext):
+    cog: Trading = ctx.cog
+    session = cog.users.get(ctx.author.id)
+    if session is not None:
+        if session.id in cog.trades:
+            return True
+    raise commands.CommandError("You're not trading with anyone")
 
 class Trading:
     bot: GrowTube
@@ -50,7 +58,7 @@ class Trading:
                     else f"{i.amount:,} {i.name}"
                     for i in session.items[ctx.author.id].values()
                 ]
-            ),
+            ) or "No Items",
         )
         await msg.edit(embed=embed)
 
@@ -76,7 +84,7 @@ class Trading:
                     id=token_urlsafe(6),
                 )
                 self.users[ctx.author.id] = session
-                view = ConfirmView(ctx, responded=user, delete_after=None)
+                view = ConfirmView(ctx, responded=user, delete_after=False, timeout=30)
                 res = await view.prompt(
                     f"{ctx.author.mention} wants to trade with you {user.mention}"
                 )
@@ -99,8 +107,12 @@ class Trading:
             raise commands.CommandError("You're not trading with anyone right now")
 
     @trade.command()
+    @commands.check(_check)
     async def cancel(self, ctx: GrowContext):
         session = self.users.pop(ctx.author.id)
+        if session.cancelled.is_set():
+            await sleep(0)
+            session.cancelled.set()
         session.users.remove(ctx.author.id)
         data = self.trades.pop(session.id)
         msg, embed, _ = data
@@ -108,13 +120,15 @@ class Trading:
         embed.description = "Trade Cancelled"
         await msg.edit(embed=embed)
         await msg.reply("Cancelled trade")
-
+    
     @trade.command()
+    @commands.check(_check)
     async def accept(self, ctx: GrowContext):
         session = self.users[ctx.author.id]
         if session.is_accepting and session.user_accepting == ctx.author.id:
             return
-        res = await ConfirmView(ctx).prompt(
+        view = ConfirmView(ctx, delete_after=False, timeout=30)
+        res = await view.prompt(
             f"{ctx.author.mention} are you sure you want accept?"
         )
         if res:
@@ -123,17 +137,21 @@ class Trading:
             session.is_accepting = True
             session.user_accepting = ctx.author.id
             user2: int = find(lambda user: user != ctx.author.id, session.users)
+            create_task(view.message.edit(f"Waiting for {self.bot.get_user(user2)}"))
             await async_any(
                 session.accepted.wait(),
                 session.cancelled.wait(),
             )
             if session.cancelled.is_set():
                 session.is_accepting = False
+                session.user_accepting = None
                 session.accepted.clear()
+                create_task(view.message.edit(f"{self.bot.get_user(user2)} cancelled confirmation"))
                 return await ctx.reply(
                     f"{self.bot.get_user(user2)} cancelled the trade confirmation"
                 )
             else:
+                create_task(view.message.edit(f"{self.bot.get_user(user2)} accepted!"))
                 async with self.bot.pool.acquire() as conn:
                     conn: Connection
                     u1_inv = await conn.fetch(
@@ -254,9 +272,13 @@ class Trading:
         else:
             session.is_accepting = False
             session.accepted.clear()
+            session.cancelled.set()
+            await sleep(0)
+            session.cancelled.unset()
             await ctx.reply("Cancelled")
 
     @trade.command()
+    @commands.check(_check)
     async def add(self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None):
         if amount < 0:
             return
@@ -274,7 +296,7 @@ class Trading:
                 item = items[None]
                 if item.amount + amount > currency:
                     return await ctx.reply(f"You don't have enough {currency_name}")
-                item.amount += item.amount
+                item.amount += amount
             except KeyError:
                 items[None] = TradeItem(type=1, amount=amount)
 
@@ -303,7 +325,43 @@ class Trading:
                     return await ctx.reply(f"You don't have enough {item[0]}")
                 item.amount += amount
             except Exception:
-                session.items[ctx.author.id][name] = TradeItem(type=0, amount=amount, name=name)
+                session.items[ctx.author.id][item_name] = TradeItem(type=0, amount=amount, name=name)
             
             await self._update_message(ctx, self.users[ctx.author.id])
             return await ctx.reply(f"Added **{amount}** {name}")
+
+    @trade.command()
+    @commands.check(_check)
+    async def remove(self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None):
+        if amount < 0:
+            return
+        session = self.users[ctx.author.id]
+        if session.is_accepting:
+            return
+        if item_name is None:
+            items = self.users[ctx.author.id].items[ctx.author.id]
+            try:
+                item = items[None]
+                if item.amount - amount < 0:
+                    return await ctx.reply(f"You don't have {amount} {currency_name} in trade")
+                item.amount -= amount
+                if item.amount == 0:
+                    session.items[ctx.author.id].pop(None)
+            except KeyError:
+                return await ctx.reply(f"You don't have {amount} {currency_name} in trade")
+
+            await self._update_message(ctx, self.users[ctx.author.id])
+            return await ctx.reply(f"Removed **{amount}** {currency_name}")
+        else:
+            item_name = item_name.lower()
+            try:
+                item = session.items[ctx.author.id][item_name]
+                if (item.amount - amount) < 0 :
+                    return await ctx.reply(f"You don't have {amount} '{item.name}'")
+                item.amount -= amount
+                if item.amount == 0:
+                    session.items[ctx.author.id].pop(item_name)
+            except Exception:
+                return await ctx.reply(f"You don't have '{item_name}' in trade")
+            await self._update_message(ctx, self.users[ctx.author.id])
+            return await ctx.reply(f"Removed **{amount}** '{item.name}'")
