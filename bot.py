@@ -16,6 +16,8 @@ psutil.cpu_percent()
 
 
 class GrowTube(commands.Bot):
+    EMBED_COLOUR = discord.Color(15007744)
+
     def __init__(self, command_prefix, help_command=None, description=None, **options):
         super().__init__(
             command_prefix,
@@ -104,13 +106,18 @@ def get_bot(use_colour: bool = True):
         try:
             bot.load_extension(config["ext_dir"] + "." + extension)
         except Exception as exc:
-            asyncio.create_task(_ext_err(exc))
+            bot.loop.create_task(_ext_err(exc))
 
     bot.load_extension("jishaku")
 
     @bot.listen()
     async def on_ready():
         bot.log.info("Logged in")
+
+    @bot.listen()
+    async def on_message_edit(before, after):
+        if before.content != after.content:
+            await bot.process_commands(after)
 
     return bot, token
 

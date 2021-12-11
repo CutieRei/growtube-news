@@ -11,12 +11,14 @@ from discord.ext.commands.errors import (
     MissingRole,
     NoPrivateMessage,
     NotOwner,
+    CommandOnCooldown,
 )
 from discord.utils import utcnow
+from datetime import timedelta
+from humanize import precisedelta
 import traceback
 
 _IGNORED_EXCEPTIONS = (
-    CommandNotFound,
     NoPrivateMessage,
     NotPermittedForPublish,
     NotOwner,
@@ -42,9 +44,16 @@ class ErrorHandler(commands.Cog):
             if cog.has_error_handler():
                 return
 
-        elif isinstance(error, CommandNotFound):
+        if isinstance(error, CommandNotFound):
             msg = ctx.message.content.replace(ctx.prefix, "")
-            await ctx.send("No command named `{}`".format(msg))
+            await ctx.reply("No command named `{}`".format(msg))
+
+        elif isinstance(error, CommandOnCooldown):
+            await ctx.reply(
+                "Please try again in {}".format(
+                    precisedelta(timedelta(seconds=error.retry_after), format="%d")
+                )
+            )
 
         elif isinstance(error, _IGNORED_EXCEPTIONS):
             return
@@ -53,7 +62,11 @@ class ErrorHandler(commands.Cog):
             tb = traceback.format_exception(type(error), error, error.__traceback__)
             bot: commands.Bot = ctx.bot
             channel = bot.get_channel(ctx.bot.CHANNEL_LOG)
-            tasks = []
+            tasks = [
+                ctx.reply(
+                    f"Oops an error has occured **{type(error).__name__}: {str(error)}**"
+                )
+            ]
             if channel:
                 tasks.append(
                     channel.send(

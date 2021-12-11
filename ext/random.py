@@ -11,6 +11,8 @@ class Random(commands.Cog):
 
     @commands.command(usage="<things...>")
     async def pick(self, ctx: commands.Context, *things: str):
+        if not things:
+            return
         await ctx.send(
             random.choice(things), allowed_mentions=discord.AllowedMentions.none()
         )
@@ -19,7 +21,7 @@ class Random(commands.Cog):
     async def avatar(self, ctx: commands.Context, who: Optional[discord.Member] = None):
         who = who or ctx.author
         embed = discord.Embed(
-            title=f"Avatar for {who}", url=who.avatar.url, color=who.color
+            title=f"Avatar for {who}", url=who.avatar.url, color=self.bot.EMBED_COLOUR
         )
         embed.set_image(url=who.avatar.url)
         await ctx.send(embed=embed)

@@ -4,49 +4,44 @@ A Discord news bot for GrowTube Production
 
 ## How to setup
 
+Install poetry
+
+```console
+pip3 install poetry
+```
+
 Clone this repository
 
 ```console
-$ git clone https://github.com/ReyterYT/growtube-news.git
+git clone https://github.com/ReyterYT/growtube-news.git
 ```
 
-Install dependencies with poetry (you need to have poetry installed)
+Create venv(Optional but recommended)
+
 ```console
-$ poetry install -E pg
+python3 -m virtualenv venv
+```
+
+Install dependencies with poetry
+
+```console
+poetry install -E pg
 ```
 
 If you can't or don't use asyncpg you can install without the `-E pg` flag
 
-Configure `config.json` if the file does not exist, it will use `default-config.json` instead
+Configure `config.json`, if the file does not exist it will use `default-config.json` instead
 
+> config.json format are the same as default-config.json
 
 ## How to run
 
-For Windows:
-
 ```console
-$ python3 main.py
-```
-
-Because due to issue with click coloured output on windows
-
-Linux/MacOS:
-
-```console
-$ uvicorn server:app
+python run.py
 ```
 
 ## Setup Database
 
-Run this in your database
-
-```sql
-CREATE TABLE "channels" (
-"guild" BIGINT NOT NULL,
-"type" SMALLINT NOT NULL,
-"channel" BIGINT NOT NULL,
-"webhook" BIGINT NOT NULL,
-"token" VARCHAR(68) NOT NULL);
-```
+SQL schema is in `schema.sql`
 
 postgresql database url example is in `default-config.json`

@@ -5,7 +5,7 @@ import discord
 import datetime
 
 
-embed_color = discord.Color(15007744)
+embed_color = GrowTube.EMBED_COLOUR
 
 
 class Help(commands.HelpCommand):
@@ -79,7 +79,7 @@ class Help(commands.HelpCommand):
 
     async def send_command_help(self, command: commands.Command):
         if not await self._can_run(self.context, command):
-            return await self.command_not_found(self.command)
+            return self.command_not_found(self.command)
         embed = discord.Embed(
             title=f"Help for {command.qualified_name}",
             description=command.help or "No description",
@@ -93,7 +93,7 @@ class Help(commands.HelpCommand):
 
     async def send_group_help(self, group: commands.Group):
         if not await self._can_run(self.context, group):
-            return await self.command_not_found(self.command)
+            return self.command_not_found(self.command)
         embed = discord.Embed(
             title=f"Help for {group.qualified_name}",
             description=group.help or "No description",

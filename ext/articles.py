@@ -15,7 +15,7 @@ def from_hex(string):
 
 
 emoji_url = "https://cdn.discordapp.com/emojis/803865449694494742.png"
-embed_color = discord.Color(15007744)
+embed_color = GrowTube.EMBED_COLOUR
 
 
 class Channel:
@@ -29,8 +29,6 @@ _channel_dict = {
     Channel.category2: "Contest",
     Channel.category3: "Growtopia Community",
 }
-
-embed_color = Color(15007744)
 
 admin_id = 877549553153376306
 news_types: Dict[str, Tuple[str, Color, int]] = {
