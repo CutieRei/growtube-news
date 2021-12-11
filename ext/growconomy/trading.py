@@ -30,6 +30,7 @@ class TradeSession:
     accepted: Event = dataclasses.field(default_factory=Event)
     cancelled: Event = dataclasses.field(default_factory=Event)
 
+
 def _check(ctx: GrowContext):
     cog: Trading = ctx.cog
     session = cog.users.get(ctx.author.id)
@@ -37,6 +38,7 @@ def _check(ctx: GrowContext):
         if session.id in cog.trades:
             return True
     raise commands.CommandError("You're not trading with anyone")
+
 
 class Trading:
     bot: GrowTube
@@ -58,7 +60,8 @@ class Trading:
                     else f"{i.amount:,} {i.name}"
                     for i in session.items[ctx.author.id].values()
                 ]
-            ) or "No Items",
+            )
+            or "No Items",
         )
         await msg.edit(embed=embed)
 
@@ -101,7 +104,10 @@ class Trading:
                 self.users[user.id] = session
                 self.trades[session.id] = (msg, embed, session)
 
-        elif ctx.author.id not in self.users and self.trades.get(self.users[ctx.author.id]) is None:
+        elif (
+            ctx.author.id not in self.users
+            and self.trades.get(self.users[ctx.author.id]) is None
+        ):
             raise commands.CommandError("You're not trading with anyone right now")
         elif self.trades.get(self.users[ctx.author.id]) is None:
             raise commands.CommandError("You're not trading with anyone right now")
@@ -120,7 +126,7 @@ class Trading:
         embed.description = "Trade Cancelled"
         await msg.edit(embed=embed)
         await msg.reply("Cancelled trade")
-    
+
     @trade.command()
     @commands.check(_check)
     async def accept(self, ctx: GrowContext):
@@ -128,9 +134,7 @@ class Trading:
         if session.is_accepting and session.user_accepting == ctx.author.id:
             return
         view = ConfirmView(ctx, delete_after=False, timeout=30)
-        res = await view.prompt(
-            f"{ctx.author.mention} are you sure you want accept?"
-        )
+        res = await view.prompt(f"{ctx.author.mention} are you sure you want accept?")
         if res:
             if session.is_accepting:
                 return session.accepted.set()
@@ -146,7 +150,11 @@ class Trading:
                 session.is_accepting = False
                 session.user_accepting = None
                 session.accepted.clear()
-                create_task(view.message.edit(f"{self.bot.get_user(user2)} cancelled confirmation"))
+                create_task(
+                    view.message.edit(
+                        f"{self.bot.get_user(user2)} cancelled confirmation"
+                    )
+                )
                 return await ctx.reply(
                     f"{self.bot.get_user(user2)} cancelled the trade confirmation"
                 )
@@ -210,6 +218,7 @@ class Trading:
                                     update_currency.append(
                                         [cr1[1] + c2.amount, ctx.author.id]
                                     )
+
                         def compute(user_id: int, user_id2: int):
                             for item in inv[user_id].values():
                                 amount: int = item[2]
@@ -218,7 +227,9 @@ class Trading:
                                 if item is not None:
                                     amount_left = amount - item.amount
                                     if amount_left > 0:
-                                        decr_updates.append([item.amount, item_id, user_id])
+                                        decr_updates.append(
+                                            [item.amount, item_id, user_id]
+                                        )
                                     else:
                                         deletes.append([item_id, user_id])
 
@@ -242,7 +253,7 @@ class Trading:
                                 incr_updates,
                             )
                         if decr_updates:
-                                await conn.executemany(
+                            await conn.executemany(
                                 "UPDATE inventory SET quantity  = quantity - $1 WHERE item_id = $2 and user_id = $3",
                                 decr_updates,
                             )
@@ -253,8 +264,8 @@ class Trading:
                             )
                         if inserts:
                             await conn.executemany(
-                                    "INSERT INTO inventory (item_id, user_id, quantity) VALUES ($1, $2, $3)",
-                                    inserts,
+                                "INSERT INTO inventory (item_id, user_id, quantity) VALUES ($1, $2, $3)",
+                                inserts,
                             )
                         if deletes:
                             await conn.executemany(
@@ -278,7 +289,9 @@ class Trading:
 
     @trade.command()
     @commands.check(_check)
-    async def add(self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None):
+    async def add(
+        self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None
+    ):
         if amount < 0 or amount == 0:
             return
         session = self.users[ctx.author.id]
@@ -324,14 +337,18 @@ class Trading:
                     return await ctx.reply(f"You don't have enough {item[0]}")
                 item.amount += amount
             except Exception:
-                session.items[ctx.author.id][item_name] = TradeItem(type=0, amount=amount, name=name)
-            
+                session.items[ctx.author.id][item_name] = TradeItem(
+                    type=0, amount=amount, name=name
+                )
+
             await self._update_message(ctx, self.users[ctx.author.id])
             return await ctx.reply(f"Added **{amount}** {name}")
 
     @trade.command()
     @commands.check(_check)
-    async def remove(self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None):
+    async def remove(
+        self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None
+    ):
         if amount < 0 or amount == 0:
             return
         session = self.users[ctx.author.id]
@@ -342,12 +359,16 @@ class Trading:
             try:
                 item = items[None]
                 if item.amount - amount < 0:
-                    return await ctx.reply(f"You don't have {amount} {currency_name} in trade")
+                    return await ctx.reply(
+                        f"You don't have {amount} {currency_name} in trade"
+                    )
                 item.amount -= amount
                 if item.amount == 0:
                     session.items[ctx.author.id].pop(None)
             except KeyError:
-                return await ctx.reply(f"You don't have {amount} {currency_name} in trade")
+                return await ctx.reply(
+                    f"You don't have {amount} {currency_name} in trade"
+                )
 
             await self._update_message(ctx, self.users[ctx.author.id])
             return await ctx.reply(f"Removed **{amount}** {currency_name}")
@@ -355,7 +376,7 @@ class Trading:
             item_name = item_name.lower()
             try:
                 item = session.items[ctx.author.id][item_name]
-                if (item.amount - amount) < 0 :
+                if (item.amount - amount) < 0:
                     return await ctx.reply(f"You don't have {amount} '{item.name}'")
                 item.amount -= amount
                 if item.amount == 0:

@@ -1,20 +1,16 @@
 from discord.colour import Color
 from discord.ext import commands
 from random import choices
+
+from discord.ext.commands.errors import CommandError
 from bot import GrowTube
 from discord.utils import utcnow
-from typing import NoReturn, Optional, Tuple, Union
+from typing import NoReturn, Optional, Union
 from .trading import Trading
 from .constants import *
+from .utils import GrowContext
 import asyncpg
 import discord
-
-
-async def check(ctx: commands.Context[GrowTube]) -> Union[bool, NoReturn]:
-    result = await ctx.bot.pool.fetchrow(
-        "SELECT * FROM beta_tester WHERE user_id=$1", ctx.author.id
-    )
-    return (result is not None) or (ctx.author.id in ctx.bot.owner_ids)
 
 
 def _quantity_convert(arg):
@@ -24,6 +20,15 @@ def _quantity_convert(arg):
         if arg.lower() == "all":
             return "all"
         raise
+
+
+def _trade_check(ctx: GrowContext):
+    cog: Growconomy = ctx.cog
+    session = cog.users.get(ctx.author.id)
+    if session:
+        if session.id in cog.trades:
+            raise CommandError("You're currently trading")
+    return True
 
 
 def _calculate_price(base: int, demand: int, supply: int, d_units: int, s_units: int):
@@ -38,16 +43,16 @@ class Growconomy(Trading, commands.Cog):
         self.bot = bot
         super().__init__()
 
-    async def cog_check(self, ctx: commands.Context[GrowTube]):
+    async def cog_check(self, ctx: GrowContext):
         _ignored_cmd = {self.register, self.market}
-        if await self.bot.pool.fetchrow(
+        if ctx.command in _ignored_cmd:
+            return True
+        elif await self.bot.pool.fetchval(
             "SELECT 1 FROM users WHERE id=$1", ctx.author.id
         ):
             if ctx.command == self.register:
                 return False
             return True
-        if ctx.command in _ignored_cmd:
-            return await check(ctx)
 
     @commands.command(aliases=["bal", "balance"])
     async def bank(self, ctx: commands.Context, user: discord.User = None):
@@ -120,6 +125,7 @@ class Growconomy(Trading, commands.Cog):
         await ctx.reply("```\n" + records + "```")
 
     @commands.command()
+    @commands.check(_trade_check)
     async def sell(
         self,
         ctx: commands.Context,
@@ -177,6 +183,7 @@ class Growconomy(Trading, commands.Cog):
             )
 
     @commands.command()
+    @commands.check(_trade_check)
     async def buy(
         self, ctx: commands.Context, quantity: Optional[int] = 1, *, item_name
     ):
