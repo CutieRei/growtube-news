@@ -186,12 +186,12 @@ class Trading:
                                     update_currency.append(
                                         [cr1[1] - c1.amount, ctx.author.id]
                                     )
-                                    update_currency.append([cr1[1] - c1.amount, user2])
+                                    update_currency.append([cr1[1] + c1.amount, user2])
                                 if c2:
                                     cr2 = find(lambda x: x[0] == user2, currencies)
                                     update_currency.append([cr2[1] - c2.amount, user2])
                                     update_currency.append(
-                                        [cr2[1] - c2.amount, ctx.author.id]
+                                        [cr2[1] + c2.amount, ctx.author.id]
                                     )
                         def compute(user_id: int, user_id2: int):
                             for item in inv[user_id].values():
