@@ -67,9 +67,9 @@ class Growconomy(Trading, commands.Cog):
             color=embed_color,
             timestamp=utcnow(),
         )
-        embed.set_thumbnail(url=user.avatar.url)
+        embed.set_thumbnail(url=user.display_avatar)
         embed.set_footer(
-            text=f"Requested by {ctx.author}", icon_url=ctx.me.display_avatar.url
+            text=f"Requested by {ctx.author}", icon_url=ctx.me.display_avatar
         )
         await ctx.send(embed=embed)
 
