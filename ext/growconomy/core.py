@@ -11,6 +11,10 @@ from .utils import GrowContext
 import discord
 import json
 
+def compute_transaction(amount: int):
+    if amount > 100000:
+        return int(amount+(amount*0.3)), 30
+    return int(amount+(amount*0.15)), 15
 
 def _quantity_convert(arg) -> Union[int, Literal["all"]]:
     try:
@@ -152,6 +156,8 @@ class Growconomy(Trading, commands.Cog):
         if currency < 0:
             currency = 0
         currency *= quantity
+        total, tax = compute_transaction(currency)
+        currency = currency-(total-currency)
         if record:
             async with self.bot.pool.acquire() as conn:
                 async with conn.transaction():
@@ -194,7 +200,7 @@ class Growconomy(Trading, commands.Cog):
                         ctx.author.id,
                     )
             await ctx.send(
-                f"Sold **{quantity}** {record[3]} for **{currency:,} {currency_name}** {currency_emoji}"
+                f"Sold **{quantity}** {record[3]} for **{currency:,} {currency_name}** {currency_emoji} with {tax}% tax"
             )
 
     @commands.command()
@@ -221,7 +227,7 @@ class Growconomy(Trading, commands.Cog):
         price = _calculate_price(value, record[4], record[3], 0, record[5])
         if price < 0:
             price = 1
-        price_total = price * quantity
+        price_total, tax = compute_transaction(price * quantity)
         remaining = currency - price_total
         if remaining < 0 or (record[5] - quantity) < 0:
             return
@@ -271,7 +277,7 @@ class Growconomy(Trading, commands.Cog):
                     ctx.author.id,
                 )
             await ctx.send(
-                f"Bought **{quantity}** {record[2]} for **{price_total:,} {currency_name}** {currency_emoji}"
+                f"Bought **{quantity}** {record[2]} for **{price_total:,} {currency_name}** {currency_emoji} with {tax}% tax"
             )
 
     @commands.command(aliases=["mkt", "ma"])
