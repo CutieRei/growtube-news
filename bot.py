@@ -1,5 +1,6 @@
 from discord.ext import commands
 from discord.utils import utcnow
+import aioredis
 import aiohttp
 import asyncpg
 import discord
@@ -35,6 +36,7 @@ class GrowTube(commands.Bot):
         )
         self.pool = asyncpg.create_pool(options.pop("dsn"))
         self.db = storage.PostgresStorage(self.pool)
+        self.redis = aioredis.from_url(options.pop("redis"))
         self.CHANNEL_LOG = options.pop("channel_log", None)
         self.log = logging.getLogger(__name__)
         self.log.setLevel(logging.DEBUG if debug else logging.INFO)
@@ -42,6 +44,7 @@ class GrowTube(commands.Bot):
 
     async def start(self, *args, **kwargs):
         await self.pool
+        await self.redis
         self.http_session = aiohttp.ClientSession()
         self.uptime = utcnow()
         await super().start(*args, **kwargs)
@@ -50,6 +53,7 @@ class GrowTube(commands.Bot):
         self.log.info("Logging out now")
         results = await asyncio.gather(
             self.pool.close(),
+            self.redis.close(),
             self.http_session.close(),
             super().close(),
             return_exceptions=True,
@@ -89,6 +93,7 @@ def get_bot(use_colour: bool = True):
         command_prefix=config["prefix"],
         owner_ids=config["owners"],
         dsn=config["dsn"],
+        redis=config["redis"],
         channel_log=config["channel_log"],
         debug=config.get("debug", False),
         use_colour=use_colour,

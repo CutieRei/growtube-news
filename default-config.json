@@ -12,5 +12,6 @@
         "growconomy"
     ],
     "owners": [],
-    "dsn": "postgres://postgres@localhost:5432/growtube-news"
+    "dsn": "postgres://postgres@localhost:5432/growtube-news",
+    "redis": "redis://localhost/0"
 }

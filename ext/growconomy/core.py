@@ -1,19 +1,18 @@
-from discord.colour import Color
 from discord.ext import commands
 from random import choices
-
+from asyncio import create_task
 from discord.ext.commands.errors import CommandError
 from bot import GrowTube
 from discord.utils import utcnow
-from typing import NoReturn, Optional, Union
+from typing import Optional, Union, Literal
 from .trading import Trading
 from .constants import *
 from .utils import GrowContext
-import asyncpg
 import discord
+import json
 
 
-def _quantity_convert(arg):
+def _quantity_convert(arg) -> Union[int, Literal["all"]]:
     try:
         return int(arg)
     except ValueError:
@@ -133,6 +132,7 @@ class Growconomy(Trading, commands.Cog):
         *,
         item_name,
     ):
+        quantity: Union[int, Literal["all"]] = quantity
         if quantity != "all" and quantity <= 0:
             return
         record = await self.bot.pool.fetchrow(
@@ -172,6 +172,21 @@ class Growconomy(Trading, commands.Cog):
                         "UPDATE items SET supply = supply + 1, stock = stock + $1 WHERE id = $2",
                         quantity,
                         record[0],
+                    )
+                    create_task(
+                        self.bot.redis.publish(
+                            "market",
+                            json.dumps(
+                                {
+                                    "id": record[0],
+                                    "name": record[3],
+                                    "value": value,
+                                    "demand": record[5],
+                                    "supply": record[4] + 1,
+                                    "stock": record[6] + quantity,
+                                }
+                            ),
+                        )
                     )
                     await conn.execute(
                         "UPDATE users SET currency = currency + $1 WHERE id = $2",
@@ -234,6 +249,21 @@ class Growconomy(Trading, commands.Cog):
                     "UPDATE items SET demand = demand + 1, stock = stock - $1 WHERE id = $2 AND stock > 0",
                     quantity,
                     record[0],
+                )
+                create_task(
+                    self.bot.redis.publish(
+                        "market",
+                        json.dumps(
+                            {
+                                "id": record[0],
+                                "name": record[2],
+                                "value": value,
+                                "demand": record[4] + 1,
+                                "supply": record[3],
+                                "stock": record[5] - quantity,
+                            }
+                        ),
+                    )
                 )
                 await conn.execute(
                     "UPDATE users SET currency = $1 WHERE id = $2",
