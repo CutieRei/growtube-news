@@ -13,7 +13,7 @@ import json
 
 def compute_transaction(amount: int):
     if amount > 100000:
-        return int(amount+(amount*0.3)), 15
+        return int(amount+(amount*0.3)), 1
     return int(amount+(amount*0.15)), 5
 
 def _quantity_convert(arg) -> Union[int, Literal["all"]]:
