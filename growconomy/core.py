@@ -282,13 +282,13 @@ class Growconomy(Trading, commands.Cog):
     @commands.command(aliases=["mkt", "ma"])
     async def market(self, ctx: GrowContext):
         """
-        Format: (id)item name(price)(stock)
+        Format: (price) (quantity) item name
         """
         records = await self.bot.pool.fetch(
             "SELECT id, name, value, demand, supply, stock FROM items WHERE buyable ORDER BY id ASC"
         )
         items = [
-            f"[{record[0]}]{record[1]}({_calculate_price(record[2], record[3], record[4], 0, record[5])})({record[5]})"
+            f"P: {_calculate_price(record[2], record[3], record[4], 0, record[5]):<10,} Q: {record[5]: <5} {record[1]}"
             for record in records
         ]
         await ctx.send("```\n" + ("\n".join(items)) + "\n```")

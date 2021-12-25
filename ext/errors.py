@@ -61,7 +61,9 @@ class ErrorHandler(commands.Cog):
             return
 
         else:
-            tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+            tb = "".join(
+                traceback.format_exception(type(error), error, error.__traceback__)
+            )
             bot: commands.Bot = ctx.bot
             channel = bot.get_channel(ctx.bot.CHANNEL_LOG)
             tasks = [
