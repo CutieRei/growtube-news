@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Tuple, Callable
 from discord.ext.commands.errors import NoPrivateMessage
 from discord import Embed, Color, TextChannel, utils, Webhook
-from bot import GrowTube, NotPermittedForPublish
+from bot import GrowTube, NotPermittedForPublish, GrowContext
 from discord.ext import commands
 import discord
 import datetime
@@ -77,15 +77,14 @@ class QuitError(Exception):
 
 
 async def message_wait(
-    ctx: commands.Context[GrowTube],
+    ctx: GrowContext,
     predicate: Callable[[discord.Message], bool],
     input,
     msg="Invalid value!",
 ) -> discord.Message:
-    bot = ctx.bot
     await ctx.send(input + ". Enter `cancel` to exit.")
     while True:
-        message = await bot.wait_for(
+        message = await ctx.bot.wait_for(
             "message",
             check=lambda x: x.author == ctx.author and x.channel == ctx.channel,
         )
@@ -97,7 +96,7 @@ async def message_wait(
             await ctx.send(msg)
 
 
-async def broadcast(chtype: int, ctx: commands.Context[GrowTube], *args, **kwargs):
+async def broadcast(chtype: int, ctx: GrowContext, *args, **kwargs):
     bot = ctx.bot
     channels = await bot.db.get_channels(chtype)
 
@@ -127,7 +126,7 @@ def get_time():
 
 
 async def _setchannel(
-    ctx: commands.Context[GrowTube], chtype: int, channel_id: int, webhook_id: int
+    ctx: GrowContext, chtype: int, channel_id: int, webhook_id: int
 ) -> bool:
 
     bot = ctx.bot
@@ -155,7 +154,7 @@ async def _setchannel(
     return True
 
 
-async def _deletechannel(ctx: commands.Context[GrowTube], chtype: int) -> bool:
+async def _deletechannel(ctx: GrowContext, chtype: int) -> bool:
     bot = ctx.bot
     channel = (await bot.db.get_guild(ctx.guild.id))[chtype]
     if channel is None:
@@ -171,7 +170,7 @@ async def _deletechannel(ctx: commands.Context[GrowTube], chtype: int) -> bool:
     return True
 
 
-def check(ctx: commands.Context[GrowTube]):
+def check(ctx: GrowContext):
     if not ctx.guild:
         raise NoPrivateMessage()
     elif ctx.author.get_role(admin_id):
@@ -181,7 +180,7 @@ def check(ctx: commands.Context[GrowTube]):
     )
 
 
-def check_channel(ctx: commands.Context[GrowTube]):
+def check_channel(ctx: GrowContext):
     try:
         return check(ctx)
     except NotPermittedForPublish:
@@ -191,9 +190,7 @@ def check_channel(ctx: commands.Context[GrowTube]):
 
 
 class ServerView(discord.ui.View):
-    def __init__(
-        self, ctx: commands.Context[GrowTube], *, timeout: Optional[float] = None
-    ) -> None:
+    def __init__(self, ctx: GrowContext, *, timeout: Optional[float] = None) -> None:
         super().__init__(timeout=timeout)
         self.type = None
         self.ctx = ctx
@@ -267,7 +264,7 @@ class Articles(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.check(check_channel)
-    async def channels(self, ctx: commands.Context[GrowTube]):
+    async def channels(self, ctx: GrowContext):
         """
         If this command is called without any subcommands, it show's all the channel this server is attached to.
         """
@@ -293,14 +290,14 @@ class Articles(commands.Cog):
         await ctx.send(embed=embed)
 
     @channels.group(invoke_without_command=True)
-    async def set(self, ctx: commands.Context[GrowTube]):
+    async def set(self, ctx: GrowContext):
         "Set news channel for this server, does nothing if called without subcommand"
         return
 
     @set.command(name="announcement")
     async def set_announcement(
         self,
-        ctx: commands.Context[GrowTube],
+        ctx: GrowContext,
         channel: TextChannel,
         webhook: Optional[int] = None,
     ):
@@ -312,7 +309,7 @@ class Articles(commands.Cog):
     @set.command(name="contest")
     async def set_contest(
         self,
-        ctx: commands.Context[GrowTube],
+        ctx: GrowContext,
         channel: TextChannel,
         webhook: Optional[int] = None,
     ):
@@ -324,7 +321,7 @@ class Articles(commands.Cog):
     @set.command(name="growtopia-community", aliases=["gt-community"])
     async def set_growtopia_community(
         self,
-        ctx: commands.Context[GrowTube],
+        ctx: GrowContext,
         channel: TextChannel,
         webhook: Optional[int] = None,
     ):
@@ -334,26 +331,26 @@ class Articles(commands.Cog):
         await _setchannel(ctx, Channel.category3, channel.id, webhook)
 
     @channels.group(invoke_without_command=True, aliases=["remove", "del", "rm"])
-    async def delete(self, ctx: commands.Context[GrowTube]):
+    async def delete(self, ctx: GrowContext):
         "Remove news channel from this server (this does not delete the actual channel)"
         return
 
     @delete.command(name="announcement")
-    async def del_announcement(self, ctx: commands.Context[GrowTube]):
+    async def del_announcement(self, ctx: GrowContext):
         """
         Remove `Growtopia Announcement, Growtopia News, Growtube News` channel from this server
         """
         await _deletechannel(ctx, Channel.category1)
 
     @delete.command(name="contest")
-    async def del_contest(self, ctx: commands.Context[GrowTube]):
+    async def del_contest(self, ctx: GrowContext):
         """
         Remove `VOTW, WOTD` channel from this server
         """
         await _deletechannel(ctx, Channel.category2)
 
     @delete.command(name="growtopia-community", aliases=["community", "gt-community"])
-    async def del_growtopia_community(self, ctx: commands.Context[GrowTube]):
+    async def del_growtopia_community(self, ctx: GrowContext):
         """
         Remove Growtopia Community `Forums, Guidebook, Suggestions` channel from this server
         """

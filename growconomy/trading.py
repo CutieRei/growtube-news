@@ -1,6 +1,6 @@
 from asyncio.tasks import create_task, sleep
 from asyncpg.connection import Connection
-from bot import GrowTube
+from bot import GrowContext, MessagedError
 from discord.ext import commands
 from typing import Dict, List, Optional, Literal, Tuple
 from discord import User, Message, Embed
@@ -8,8 +8,8 @@ from secrets import token_urlsafe
 from discord.utils import find
 from asyncio import Event
 from .views import ConfirmView
-from .constants import *
-from .utils import async_any, GrowContext
+from .constants import GrowTube, currency_name, embed_color
+from .utils import async_any
 import dataclasses
 
 
@@ -37,7 +37,7 @@ def _check(ctx: GrowContext):
     if session is not None:
         if session.id in cog.trades:
             return True
-    raise commands.CommandError("You're not trading with anyone")
+    raise MessagedError("You're not trading with anyone")
 
 
 class Trading:
@@ -108,9 +108,9 @@ class Trading:
             ctx.author.id not in self.users
             and self.trades.get(self.users[ctx.author.id]) is None
         ):
-            raise commands.CommandError("You're not trading with anyone right now")
+            raise MessagedError("You're not trading with anyone right now")
         elif self.trades.get(self.users[ctx.author.id]) is None:
-            raise commands.CommandError("You're not trading with anyone right now")
+            raise MessagedError("You're not trading with anyone right now")
 
     @trade.command()
     @commands.check(_check)

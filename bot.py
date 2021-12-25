@@ -70,6 +70,13 @@ class NotPermittedForPublish(commands.CheckFailure):
     pass
 
 
+class MessagedError(commands.CommandError):
+    pass
+
+
+GrowContext = commands.Context[GrowTube]
+
+
 def get_bot(use_colour: bool = True):
 
     config = None
@@ -107,9 +114,15 @@ def get_bot(use_colour: bool = True):
         if channel:
             await channel.send(f"```py\n{exc}\n```")
 
-    for extension in config["ext"]:
+    for extension in config.get("ext", ""):
         try:
             bot.load_extension(config["ext_dir"] + "." + extension)
+        except Exception as exc:
+            bot.loop.create_task(_ext_err(exc))
+    
+    for extension in config.get("ext_modules", ""):
+        try:
+            bot.load_extension(extension)
         except Exception as exc:
             bot.loop.create_task(_ext_err(exc))
 

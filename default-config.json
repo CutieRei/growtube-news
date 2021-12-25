@@ -8,9 +8,12 @@
         "articles",
         "errors",
         "utils",
-        "random",
-        "growconomy"
+        "random"
     ],
+    "ext_modules": [
+        "growconomy",
+        "growconomy.career"
+    ]
     "owners": [],
     "dsn": "postgres://postgres@localhost:5432/growtube-news",
     "redis": "redis://localhost/0"

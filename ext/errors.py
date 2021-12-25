@@ -1,8 +1,7 @@
 from asyncio import gather
-from bot import GrowTube, NotPermittedForPublish
+from bot import GrowTube, GrowContext, NotPermittedForPublish, MessagedError
 from discord.ext import commands
 from discord.ext.commands.errors import (
-    BotMissingRole,
     CommandNotFound,
     ConversionError,
     MissingAnyRole,
@@ -16,7 +15,9 @@ from discord.ext.commands.errors import (
 from discord.utils import utcnow
 from datetime import timedelta
 from humanize import precisedelta
+from io import BytesIO
 import traceback
+import discord
 
 _IGNORED_EXCEPTIONS = (
     NoPrivateMessage,
@@ -32,9 +33,7 @@ _IGNORED_EXCEPTIONS = (
 
 class ErrorHandler(commands.Cog):
     @commands.Cog.listener()
-    async def on_command_error(
-        self, ctx: commands.Context[GrowTube], error: commands.CommandError
-    ):
+    async def on_command_error(self, ctx: GrowContext, error: commands.CommandError):
         error = getattr(error, "original", error)
 
         if ctx.command and ctx.command.has_error_handler():
@@ -45,7 +44,7 @@ class ErrorHandler(commands.Cog):
                 return
 
         if isinstance(error, CommandNotFound):
-            msg = ctx.message.content.replace(ctx.prefix, "")
+            msg = ctx.message.content.replace(ctx.prefix, "").split()[0]
             await ctx.reply("No command named `{}`".format(msg))
 
         elif isinstance(error, CommandOnCooldown):
@@ -55,11 +54,14 @@ class ErrorHandler(commands.Cog):
                 )
             )
 
+        elif isinstance(error, MessagedError):
+            await ctx.reply(str(error) or "Error occured")
+
         elif isinstance(error, _IGNORED_EXCEPTIONS):
             return
 
         else:
-            tb = traceback.format_exception(type(error), error, error.__traceback__)
+            tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
             bot: commands.Bot = ctx.bot
             channel = bot.get_channel(ctx.bot.CHANNEL_LOG)
             tasks = [
@@ -70,17 +72,15 @@ class ErrorHandler(commands.Cog):
             if channel:
                 tasks.append(
                     channel.send(
-                        "command: `{}`\nauthor: `{}`\nwhen: <t:{}:F>\n```py\n{}```".format(
+                        "command: `{}`\nauthor: `{}`\nwhen: <t:{}:F>".format(
                             ctx.command.qualified_name,
                             ctx.author,
                             int(utcnow().timestamp()),
-                            "".join(tb),
-                        )
+                        ),
+                        file=discord.File(BytesIO(tb.encode()), "error.py"),
                     )
                 )
-            if ctx.author.id in ctx.bot.owner_ids:
-                tasks.append(ctx.message.add_reaction("\U0000203c"))
-            return await gather(*tasks)
+            await gather(*tasks)
 
 
 def setup(bot: GrowTube):

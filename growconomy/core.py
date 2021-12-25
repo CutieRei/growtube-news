@@ -1,20 +1,20 @@
 from discord.ext import commands
 from random import choices
 from asyncio import create_task
-from discord.ext.commands.errors import CommandError
-from bot import GrowTube
+from bot import GrowContext, MessagedError
 from discord.utils import utcnow
 from typing import Optional, Union, Literal
 from .trading import Trading
-from .constants import *
-from .utils import GrowContext
+from .constants import currency_emoji, currency_name, embed_color, GrowTube
 import discord
 import json
 
+
 def compute_transaction(amount: int):
     if amount > 100000:
-        return int(amount+(amount*0.03)), 3
-    return int(amount+(amount*0.02)), 2
+        return int(amount + (amount * 0.03)), 3
+    return int(amount + (amount * 0.02)), 2
+
 
 def _quantity_convert(arg) -> Union[int, Literal["all"]]:
     try:
@@ -22,7 +22,7 @@ def _quantity_convert(arg) -> Union[int, Literal["all"]]:
     except ValueError:
         if arg.lower() == "all":
             return "all"
-        raise
+        raise MessagedError(f"unknown value `{arg}`")
 
 
 def _trade_check(ctx: GrowContext):
@@ -30,7 +30,7 @@ def _trade_check(ctx: GrowContext):
     session = cog.users.get(ctx.author.id)
     if session:
         if session.id in cog.trades:
-            raise CommandError("You're currently trading")
+            raise MessagedError("You're currently trading")
     return True
 
 
@@ -54,19 +54,20 @@ class Growconomy(Trading, commands.Cog):
             "SELECT 1 FROM users WHERE id=$1", ctx.author.id
         ):
             if ctx.command == self.register:
-                return False
+                raise MessagedError("You're already registered")
             return True
+        raise MessagedError("You're not registered")
 
-    @commands.command(aliases=["bal", "balance"])
-    async def bank(self, ctx: commands.Context, user: discord.User = None):
+    @commands.command(aliases=["wlt"])
+    async def wallet(self, ctx: GrowContext, user: discord.User = None):
         user = user or ctx.author
         result = await self.bot.pool.fetchrow(
             "SELECT currency FROM users WHERE id = $1", user.id
         )
         if result is None:
-            raise commands.CommandError("this user does not have an account")
+            raise MessagedError("this user does not have an account")
         embed = discord.Embed(
-            title=f"{user} Account",
+            title=f"{user} Wallet",
             description=f"**{currency_name}**: {result[0]:,} {currency_emoji}",
             color=embed_color,
             timestamp=utcnow(),
@@ -78,13 +79,13 @@ class Growconomy(Trading, commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def register(self, ctx: commands.Context):
+    async def register(self, ctx: GrowContext):
         await self.bot.pool.execute("INSERT INTO users VALUES ($1, 0)", ctx.author.id)
         await ctx.reply("Registered!")
 
     @commands.command(aliases=["clt"])
     @commands.cooldown(2, 30, commands.BucketType.user)
-    async def collect(self, ctx: commands.Context):
+    async def collect(self, ctx: GrowContext):
         item = choices([1, 2, 3, 4, 5, 6], [50, 45, 30, 50, 15, 15])[0]
         item = await self.bot.pool.fetchrow(
             "SELECT name, id FROM items WHERE id=$1", item
@@ -106,7 +107,7 @@ class Growconomy(Trading, commands.Cog):
         await ctx.reply(f"You found **{item[0]}** from the street")
 
     @commands.command(aliases=["inv"])
-    async def inventory(self, ctx: commands.Context):
+    async def inventory(self, ctx: GrowContext):
         records = await self.bot.pool.fetch(
             "SELECT items.name, inventory.quantity, items.demand, items.supply, items.stock, items.value FROM inventory INNER JOIN items ON inventory.item_id=items.id WHERE user_id=$1 ORDER BY inventory.quantity DESC",
             ctx.author.id,
@@ -131,7 +132,7 @@ class Growconomy(Trading, commands.Cog):
     @commands.check(_trade_check)
     async def sell(
         self,
-        ctx: commands.Context,
+        ctx: GrowContext,
         quantity: Optional[_quantity_convert] = 1,
         *,
         item_name,
@@ -157,7 +158,7 @@ class Growconomy(Trading, commands.Cog):
             currency = 0
         currency *= quantity
         total, tax = compute_transaction(currency)
-        currency = currency-(total-currency)
+        currency = currency - (total - currency)
         if record:
             async with self.bot.pool.acquire() as conn:
                 async with conn.transaction():
@@ -205,13 +206,11 @@ class Growconomy(Trading, commands.Cog):
 
     @commands.command()
     @commands.check(_trade_check)
-    async def buy(
-        self, ctx: commands.Context, quantity: Optional[int] = 1, *, item_name
-    ):
+    async def buy(self, ctx: GrowContext, quantity: Optional[int] = 1, *, item_name):
         if quantity <= 0:
             return
         record = await self.bot.pool.fetchrow(
-            "SELECT items.id, items.value, items.name, items.supply, items.demand, items.stock FROM items WHERE LOWER(items.name) = $1",
+            "SELECT items.id, items.value, items.name, items.supply, items.demand, items.stock FROM items WHERE LOWER(items.name) = $1 AND buyable",
             item_name.lower(),
         )
         if record is None:
@@ -281,12 +280,12 @@ class Growconomy(Trading, commands.Cog):
             )
 
     @commands.command(aliases=["mkt", "ma"])
-    async def market(self, ctx: commands.Context):
+    async def market(self, ctx: GrowContext):
         """
         Format: (id)item name(price)(stock)
         """
         records = await self.bot.pool.fetch(
-            "SELECT id, name, value, demand, supply, stock FROM items ORDER BY id ASC"
+            "SELECT id, name, value, demand, supply, stock FROM items WHERE buyable ORDER BY id ASC"
         )
         items = [
             f"[{record[0]}]{record[1]}({_calculate_price(record[2], record[3], record[4], 0, record[5])})({record[5]})"
@@ -295,7 +294,7 @@ class Growconomy(Trading, commands.Cog):
         await ctx.send("```\n" + ("\n".join(items)) + "\n```")
 
     @commands.command()
-    async def top(self, ctx: commands.Context, limit: Optional[int] = 10):
+    async def top(self, ctx: GrowContext, limit: Optional[int] = 10):
 
         if limit > 30:
             limit = 30
@@ -314,7 +313,7 @@ class Growconomy(Trading, commands.Cog):
         )
 
     @commands.command()
-    async def transfer(self, ctx: commands.Context, user: discord.User, amount: int):
+    async def transfer(self, ctx: GrowContext, user: discord.User, amount: int):
         async with self.bot.pool.acquire() as conn:
             record = await conn.fetchval("SELECT 1 FROM users WHERE id = $1", user.id)
             if not record:
