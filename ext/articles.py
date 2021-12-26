@@ -249,7 +249,7 @@ class Articles(commands.Cog):
         embed = Embed(
             color=stype[2],
             description=msg.content,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
             name=stype[0],
@@ -285,7 +285,7 @@ class Articles(commands.Cog):
             title="Attached channels",
             description="\n".join(to_render),
             color=embed_color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         await ctx.send(embed=embed)
 
@@ -399,7 +399,7 @@ class Articles(commands.Cog):
             title=title.content,
             description=body.content,
             color=color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
 
         if link:

@@ -2,7 +2,6 @@ from typing import Coroutine, Dict, List, Mapping, Optional, Set, Union
 from discord.ext import commands
 from bot import GrowTube
 import discord
-import datetime
 
 
 embed_color = GrowTube.EMBED_COLOUR
@@ -42,7 +41,7 @@ class Help(commands.HelpCommand):
         embed = discord.Embed(
             title="List of commands and categories",
             color=embed_color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         for cog, _commands in valid_commands.items():
             if cog is None:
@@ -69,7 +68,7 @@ class Help(commands.HelpCommand):
             title=f"Help for {cog.qualified_name}",
             description=cog.description or "No description",
             color=embed_color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.add_field(
             name="commands", value=", ".join((i.qualified_name for i in valid_commands))
@@ -84,7 +83,7 @@ class Help(commands.HelpCommand):
             title=f"Help for {command.qualified_name}",
             description=command.help or "No description",
             color=embed_color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.add_field(
             name="Usage", value=f"```\n{self.get_command_signature(command)}\n```"
@@ -98,7 +97,7 @@ class Help(commands.HelpCommand):
             title=f"Help for {group.qualified_name}",
             description=group.help or "No description",
             color=embed_color,
-            timestamp=datetime.datetime.utcnow(),
+            timestamp=discord.utils.utcnow(),
         )
         embed.add_field(
             name="Usage", value=f"```\n{self.get_command_signature(group)}\n```"
