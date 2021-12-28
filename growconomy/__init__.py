@@ -1,10 +1,10 @@
-from .core import *
-from .trading import *
+from .market import setup as market_setup
+from .trading import setup as trading_setup
+from .career import setup as career_setup
 from bot import GrowTube
-from . import utils
-from . import career
 
 
-def setup(bot: GrowTube) -> None:
-    bot.add_cog(Growconomy(bot))
-    bot.log.info(f"Loaded {__package__}")
+def setup(bot: GrowTube):
+    market_setup(bot)
+    trading_setup(bot)
+    career_setup(bot)

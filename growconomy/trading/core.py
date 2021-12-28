@@ -7,9 +7,9 @@ from discord import User, Message, Embed
 from secrets import token_urlsafe
 from discord.utils import find
 from asyncio import Event
-from .views import ConfirmView
-from .constants import GrowTube, currency_name, embed_color
-from .utils import async_any
+from ..views import ConfirmView
+from ..constants import GrowTube, currency_name, embed_color
+from ..utils import async_any
 import dataclasses
 
 
@@ -31,21 +31,25 @@ class TradeSession:
     cancelled: Event = dataclasses.field(default_factory=Event)
 
 
-def _check(ctx: GrowContext):
-    cog: Trading = ctx.cog
-    session = cog.users.get(ctx.author.id)
-    if session is not None:
-        if session.id in cog.trades:
-            return True
-    raise MessagedError("You're not trading with anyone")
-
-
-class Trading:
-    bot: GrowTube
-
-    def __init__(self) -> None:
+class Trading(commands.Cog):
+    def __init__(self, bot: GrowTube) -> None:
         self.users: Dict[int, TradeSession] = {}
         self.trades: Dict[str, Tuple[Message, Embed, TradeSession]] = {}
+        self.bot = bot
+
+    async def cog_check(self, ctx: GrowContext):
+        if await self.bot.pool.fetchval(
+            "SELECT 1 FROM users WHERE id=$1", ctx.author.id
+        ):
+            return True
+        elif (
+            ctx.author.id not in self.users
+            and self.trades.get(self.users.get(ctx.author.id)) is None
+        ):
+            raise MessagedError("You're not trading with anyone right now")
+        elif self.trades.get(self.users.get(ctx.author.id())) is None:
+            raise MessagedError("You're not trading with anyone right now")
+        raise MessagedError("You're not registered")
 
     async def _update_message(self, ctx: GrowContext, session: TradeSession):
         msg, embed = self.trades[session.id][0:2]
@@ -66,55 +70,49 @@ class Trading:
         await msg.edit(embed=embed)
 
     @commands.group(invoke_without_command=True)
-    async def trade(self, ctx: GrowContext, user: User = None):
-        if not ctx.invoked_subcommand:
-            if not user:
-                return
-            elif ctx.author == user:
-                await ctx.reply("You can't trade with yourself dummy")
-            elif ctx.author.id in self.users:
-                await ctx.reply("You're already trading with someone")
-            elif user.id in self.users:
-                await ctx.reply(f"**{user}** is already trading")
-            elif not await self.bot.pool.fetchval(
-                "SELECT 1 FROM users WHERE id = $1", user.id
-            ):
-                await ctx.reply("User is not registered")
-            else:
-                session = TradeSession(
-                    users=[ctx.author.id, user.id],
-                    items={ctx.author.id: {}, user.id: {}},
-                    id=token_urlsafe(6),
-                )
-                self.users[ctx.author.id] = session
-                view = ConfirmView(ctx, responded=user, delete_after=False, timeout=30)
-                res = await view.prompt(
-                    f"{ctx.author.mention} wants to trade with you {user.mention}"
-                )
-                if not res:
-                    self.users.pop(ctx.author.id)
-                    await view.message.reply(f"{user} denied the trade request")
-                    return
-                embed = Embed(title=f"Trade session {session.id}", colour=embed_color)
-                for user_id in session.users:
-                    embed.add_field(
-                        name=str(self.bot.get_user(user_id)), value="No Items"
-                    )
-                msg = await view.message.reply(embed=embed)
-                self.users[user.id] = session
-                self.trades[session.id] = (msg, embed, session)
-
-        elif (
-            ctx.author.id not in self.users
-            and self.trades.get(self.users[ctx.author.id]) is None
+    async def trade(self, ctx: GrowContext, user: Optional[User] = None):
+        """
+        Trade with other users
+        """
+        if not user:
+            return await ctx.send_help(ctx.command)
+        elif ctx.author == user:
+            raise MessagedError("You can't trade with yourself dummy")
+        elif ctx.author.id in self.users:
+            raise MessagedError("You're already trading with someone")
+        elif user.id in self.users:
+            raise MessagedError(f"`{user.display_name}` is already trading")
+        elif not await self.bot.pool.fetchval(
+            "SELECT 1 FROM users WHERE id = $1", user.id
         ):
-            raise MessagedError("You're not trading with anyone right now")
-        elif self.trades.get(self.users[ctx.author.id]) is None:
-            raise MessagedError("You're not trading with anyone right now")
+            raise MessagedError("User is not registered")
+        else:
+            session = TradeSession(
+                users=[ctx.author.id, user.id],
+                items={ctx.author.id: {}, user.id: {}},
+                id=token_urlsafe(6),
+            )
+            self.users[ctx.author.id] = session
+            view = ConfirmView(ctx, responded=user, delete_after=False, timeout=30)
+            res = await view.prompt(
+                f"{ctx.author.mention} wants to trade with you {user.mention}"
+            )
+            if not res:
+                self.users.pop(ctx.author.id)
+                await view.message.reply(f"{user} denied the trade request")
+                return
+            embed = Embed(title=f"Trade session {session.id}", colour=embed_color)
+            for user_id in session.users:
+                embed.add_field(name=str(self.bot.get_user(user_id)), value="No Items")
+            msg = await view.message.reply(embed=embed)
+            self.users[user.id] = session
+            self.trades[session.id] = (msg, embed, session)
 
     @trade.command()
-    @commands.check(_check)
     async def cancel(self, ctx: GrowContext):
+        """
+        Cancels a trade session (only works if in any trade)
+        """
         session = self.users.pop(ctx.author.id)
         if session.cancelled.is_set():
             await sleep(0)
@@ -128,8 +126,10 @@ class Trading:
         await msg.reply("Cancelled trade")
 
     @trade.command()
-    @commands.check(_check)
     async def accept(self, ctx: GrowContext):
+        """
+        Accepts a trade session, this command waits for the other user to accept
+        """
         session = self.users[ctx.author.id]
         if session.is_accepting and session.user_accepting == ctx.author.id:
             return
@@ -288,10 +288,12 @@ class Trading:
             await ctx.reply("Cancelled")
 
     @trade.command()
-    @commands.check(_check)
     async def add(
         self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None
     ):
+        """
+        Add item(s) to a trade, ommit `item name` to add currency
+        """
         if amount < 0 or amount == 0:
             return
         session = self.users[ctx.author.id]
@@ -345,10 +347,12 @@ class Trading:
             return await ctx.reply(f"Added **{amount}** {name}")
 
     @trade.command()
-    @commands.check(_check)
     async def remove(
         self, ctx: GrowContext, amount: Optional[int] = 1, *, item_name: str = None
     ):
+        """
+        Removes item(s) from a trade, ommit `item name` for currency
+        """
         if amount < 0 or amount == 0:
             return
         session = self.users[ctx.author.id]

@@ -1,7 +1,5 @@
 from asyncio import wait, FIRST_COMPLETED
 from typing import Awaitable
-from discord.ext import commands
-from bot import GrowTube
 
 
 async def async_any(*aws: Awaitable, cancel=True):

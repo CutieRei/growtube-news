@@ -4,8 +4,8 @@ from asyncio import create_task
 from bot import GrowContext, MessagedError
 from discord.utils import utcnow
 from typing import Optional, Union, Literal
-from .trading import Trading
-from .constants import currency_emoji, currency_name, embed_color, GrowTube
+from ..constants import currency_emoji, currency_name, embed_color, GrowTube
+from ..trading import Trading
 import discord
 import json
 
@@ -26,7 +26,9 @@ def _quantity_convert(arg) -> Union[int, Literal["all"]]:
 
 
 def _trade_check(ctx: GrowContext):
-    cog: Growconomy = ctx.cog
+    cog: Optional[Trading] = ctx.bot.get_cog("Trading")
+    if cog is None:
+        return True
     session = cog.users.get(ctx.author.id)
     if session:
         if session.id in cog.trades:
@@ -41,7 +43,7 @@ def _calculate_price(base: int, demand: int, supply: int, d_units: int, s_units:
         return base
 
 
-class Growconomy(Trading, commands.Cog):
+class Market(commands.Cog):
     def __init__(self, bot: GrowTube) -> None:
         self.bot = bot
         super().__init__()
@@ -60,6 +62,9 @@ class Growconomy(Trading, commands.Cog):
 
     @commands.command(aliases=["wlt"])
     async def wallet(self, ctx: GrowContext, user: discord.User = None):
+        """
+        Get a user wallet information, yes you can check anyone wallet information
+        """
         user = user or ctx.author
         result = await self.bot.pool.fetchrow(
             "SELECT currency FROM users WHERE id = $1", user.id
@@ -80,12 +85,18 @@ class Growconomy(Trading, commands.Cog):
 
     @commands.command()
     async def register(self, ctx: GrowContext):
+        """
+        Register yourself into the country
+        """
         await self.bot.pool.execute("INSERT INTO users VALUES ($1, 0)", ctx.author.id)
         await ctx.reply("Registered!")
 
     @commands.command(aliases=["clt"])
     @commands.cooldown(2, 30, commands.BucketType.user)
     async def collect(self, ctx: GrowContext):
+        """
+        Collect random items, maximum 2 use every 30 seconds
+        """
         item = choices([1, 2, 3, 4, 5, 6], [50, 45, 30, 50, 15, 15])[0]
         item = await self.bot.pool.fetchrow(
             "SELECT name, id FROM items WHERE id=$1", item
@@ -108,6 +119,9 @@ class Growconomy(Trading, commands.Cog):
 
     @commands.command(aliases=["inv"])
     async def inventory(self, ctx: GrowContext):
+        """
+        Get your inventory contents
+        """
         records = await self.bot.pool.fetch(
             "SELECT items.name, inventory.quantity, items.demand, items.supply, items.stock, items.value FROM inventory INNER JOIN items ON inventory.item_id=items.id WHERE user_id=$1 ORDER BY inventory.quantity DESC",
             ctx.author.id,
@@ -137,6 +151,9 @@ class Growconomy(Trading, commands.Cog):
         *,
         item_name,
     ):
+        """
+        Sells any item excluding non buyable
+        """
         quantity: Union[int, Literal["all"]] = quantity
         if quantity != "all" and quantity <= 0:
             return
@@ -207,6 +224,9 @@ class Growconomy(Trading, commands.Cog):
     @commands.command()
     @commands.check(_trade_check)
     async def buy(self, ctx: GrowContext, quantity: Optional[int] = 1, *, item_name):
+        """
+        Buys an item from the market excluding non buyable
+        """
         if quantity <= 0:
             return
         record = await self.bot.pool.fetchrow(
@@ -282,7 +302,7 @@ class Growconomy(Trading, commands.Cog):
     @commands.command(aliases=["mkt", "ma"])
     async def market(self, ctx: GrowContext):
         """
-        Format: (price) (quantity) item name
+        List items prices and quantities
         """
         records = await self.bot.pool.fetch(
             "SELECT id, name, value, demand, supply, stock FROM items WHERE buyable ORDER BY id ASC"
@@ -295,6 +315,10 @@ class Growconomy(Trading, commands.Cog):
 
     @commands.command()
     async def top(self, ctx: GrowContext, limit: Optional[int] = 10):
+
+        """
+        List top [limit] users with the highest amount of currency
+        """
 
         if limit > 30:
             limit = 30
@@ -314,6 +338,11 @@ class Growconomy(Trading, commands.Cog):
 
     @commands.command()
     async def transfer(self, ctx: GrowContext, user: discord.User, amount: int):
+        """
+        Transfers money from your wallet to another user wallet
+        """
+        if user == ctx.author.id:
+            return await ctx.reply("Haha no")
         async with self.bot.pool.acquire() as conn:
             record = await conn.fetchval("SELECT 1 FROM users WHERE id = $1", user.id)
             if not record:

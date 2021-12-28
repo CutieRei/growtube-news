@@ -23,7 +23,6 @@ _IGNORED_EXCEPTIONS = (
     NoPrivateMessage,
     NotPermittedForPublish,
     NotOwner,
-    MissingRequiredArgument,
     MissingRole,
     MissingAnyRole,
     MissingPermissions,
@@ -54,8 +53,15 @@ class ErrorHandler(commands.Cog):
                 )
             )
 
+        elif isinstance(error, MissingRequiredArgument):
+            arg = error.param.name.replace("_", " ")
+            await ctx.reply(f"Missing argument `{arg}`")
+
         elif isinstance(error, MessagedError):
-            await ctx.reply(str(error) or "Error occured")
+            await ctx.reply(
+                str(error)
+                or "Something happened because you're not supposed to do whatever you're doing"
+            )
 
         elif isinstance(error, _IGNORED_EXCEPTIONS):
             return
