@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from asyncpg import Connection
 from discord import Embed, User
 from discord.utils import find, utcnow
@@ -93,14 +93,15 @@ class Career(commands.Cog):
                 color=embed_color,
             )
             .set_author(name=user.display_name, icon_url=user.display_avatar)
-            .add_field(name="Job name", value=c_name)
-            .add_field(name="Position", value=pos_name)
+            .add_field(name="Job field", value=c_name)
+            .add_field(name="Job name", value=pos_name)
             .add_field(
                 name=f"Wage", value=f"{pos_pay:,} {currency_name} {currency_emoji}"
             )
         )
         if pos_started_at is not None:
-            end_at = pos_started_at + timedelta(seconds=pos_duration)
+            end_at: datetime = pos_started_at + timedelta(seconds=pos_duration)
+            end_at = end_at.replace(tzinfo=timezone.utc)
             embed.add_field(
                 name="Current job session",
                 value=f"Ended at: <t:{int(end_at.timestamp())}:f>\nTime remaining: `{precisedelta(end_at-datetime.utcnow())}`",
@@ -108,6 +109,7 @@ class Career(commands.Cog):
         await ctx.send(embed=embed)
 
     @career.command()
+    @commands.max_concurrency(1, commands.BucketType.user)
     async def change(self, ctx: GrowContext, career_id: int):
         async with self.bot.pool.acquire() as conn:
             if await conn.fetchval(
