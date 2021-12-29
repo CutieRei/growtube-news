@@ -10,10 +10,16 @@ from humanize import precisedelta
 import asyncio
 
 
-async def _has_career(ctx: GrowContext):
-    if ctx.bot.pool.fetchval("SELECT career FROM users WHERE id = $1", ctx.author.id):
-        return True
-    raise MessagedError("You don't have a career")
+def _is_working(reversed: bool = False):
+    async def _wrapped(ctx: GrowContext):
+        if await ctx.bot.pool.fetchval("SELECT started_at FROM users WHERE id = $1", ctx.author.id):
+            if reversed:
+                raise MessagedError("You're already working")
+            return True
+        if reversed:
+            return True
+        raise MessagedError("You're not currently working")
+    return _wrapped
 
 
 class Career(commands.Cog):
@@ -77,12 +83,12 @@ class Career(commands.Cog):
     @career.command()
     async def info(self, ctx: GrowContext, user: User = None):
         user = user or ctx.author
-        c_name, pos_name, pos_pay, pos_duration, pos_started_at = (
+        c_name, pos_name, pos_pay, pos_duration, u_started_at, pos_pay = (
             await self.bot.pool.fetchrow(
-                "SELECT careers.name, positions.name, positions.pay, positions.duration, users.started_at FROM users JOIN careers ON careers.id = users.career JOIN positions ON positions.id = users.position WHERE users.id = $1",
+                "SELECT careers.name, positions.name, positions.pay, positions.duration, users.started_at, positions.pay FROM users JOIN careers ON careers.id = users.career JOIN positions ON positions.id = users.position WHERE users.id = $1",
                 ctx.author.id,
             )
-        ) or [None, None, None, None, None]
+        ) or [None, None, None, None, None, None]
         if c_name is None:
             raise MessagedError(
                 f"{f'`{user.display_name}`' if user != ctx.author else 'You'} seems to be unemployed"
@@ -99,23 +105,22 @@ class Career(commands.Cog):
                 name=f"Wage", value=f"{pos_pay:,} {currency_name} {currency_emoji}"
             )
         )
-        if pos_started_at is not None:
-            end_at: datetime = pos_started_at + timedelta(seconds=pos_duration)
+        if u_started_at is not None:
+            end_at: datetime = u_started_at + timedelta(seconds=pos_duration)
             end_at = end_at.replace(tzinfo=timezone.utc)
+            percentage = (datetime.utcnow() - u_started_at).total_seconds() / pos_duration
+            currency = round(pos_pay * percentage)
             embed.add_field(
                 name="Current job session",
-                value=f"Started At: <t:{int(pos_started_at.replace(tzinfo=timezone.utc).timestamp())}:F>\nEnds at: <t:{int(end_at.timestamp())}:F>\nTime remaining: <t:{int(end_at.timestamp())}:R>",
+                value=f"Started At: <t:{int(u_started_at.replace(tzinfo=timezone.utc).timestamp())}:F>\nEnds at: <t:{int(end_at.timestamp())}:F>\nTime remaining: <t:{int(end_at.timestamp())}:R>\nAccumulated: **{currency:,} {currency_name}**",
             )
         await ctx.send(embed=embed)
 
     @career.command()
+    @commands.check(_is_working(True))
     @commands.max_concurrency(1, commands.BucketType.user)
     async def change(self, ctx: GrowContext, career_id: int):
         async with self.bot.pool.acquire() as conn:
-            if await conn.fetchval(
-                "SELECT started_at FROM users WHERE Id = $1", ctx.author.id
-            ):
-                raise MessagedError("You can't change your job while you're working")
             oc_name, op_id, op_pay = (
                 await conn.fetchrow(
                     "SELECT careers.name, positions.name, positions.pay FROM users JOIN positions ON positions.id = users.position JOIN careers ON careers.id = users.career WHERE users.id = $1",
@@ -169,14 +174,10 @@ class Career(commands.Cog):
             await ctx.send(f"Changed your career to **{c_name}** as a **{pos_name}**")
 
     @career.command()
+    @commands.check(_is_working())
     @commands.max_concurrency(1, commands.BucketType.user)
     @commands.cooldown(1, 360, commands.BucketType.user)
     async def stop(self, ctx: GrowContext):
-        is_working = await self.bot.pool.fetchval(
-            "SELECT started_at FROM users WHERE id = $1", ctx.author.id
-        )
-        if is_working is None:
-            raise MessagedError("You aren't working")
         result = await ConfirmView(ctx, delete_after=True, timeout=60).prompt(
             f"Are you sure you want to stop working?\n(Your currency will still be given by a percentage of how long you worked)"
         )
@@ -189,6 +190,7 @@ class Career(commands.Cog):
 
     @career.command()
     @commands.guild_only()
+    @commands.check(_is_working(True))
     @commands.max_concurrency(1, commands.BucketType.user)
     @commands.cooldown(1, 120, commands.BucketType.user)
     async def begin(self, ctx: GrowContext):
@@ -198,8 +200,6 @@ class Career(commands.Cog):
                 ctx.author.id,
             )
         ) or [None, None, None]
-        if started_at:
-            raise MessagedError("You're already working")
         if duration is None:
             raise MessagedError("You're unemployed")
 
