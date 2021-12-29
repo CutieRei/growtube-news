@@ -138,7 +138,7 @@ class Career(commands.Cog):
                 )
             pos_id, pos_name, c_name, pos_pay = (
                 await conn.fetchrow(
-                    "SELECT positions.id, positions.name, careers.name, positions.pay FROM positions JOIN careers ON careers.id = positions.career WHERE privilege = (SELECT MAX(privilege) FROM positions) AND careers.id = $1 ORDER BY RANDOM() LIMIT 1",
+                    "SELECT positions.id, positions.name, careers.name, positions.pay FROM positions JOIN careers ON careers.id = positions.career WHERE positions.privilege = (SELECT MAX(privilege) FROM positions WHERE career = $1) AND careers.id = $1 ORDER BY RANDOM() LIMIT 1",
                     career_id,
                 )
             ) or [None, None, None, None]
