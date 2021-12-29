@@ -48,7 +48,7 @@ def _calculate_price(base: int, demand: int, supply: int, d_units: int, s_units:
 class Market(commands.Cog):
     def __init__(self, bot: GrowTube) -> None:
         self.bot = bot
-        super().__init__()
+        self.news: Optional[str] = None
 
     async def cog_check(self, ctx: GrowContext):
         _ignored_cmd = {self.register, self.market}
@@ -61,6 +61,16 @@ class Market(commands.Cog):
                 raise MessagedError("You're already registered")
             return True
         raise MessagedError("You're not registered")
+    
+    @commands.group(invoke_without_command=True)
+    async def news(self, ctx: GrowContext):
+        await ctx.reply(self.news or "No news")
+    
+    @news.command()
+    @commands.is_owner()
+    async def set(self, ctx: GrowTube, *, content: str):
+        self.news = content
+        await ctx.reply("Oki")
 
     @commands.command(aliases=["wlt"])
     async def wallet(self, ctx: GrowContext, user: discord.User = None):
