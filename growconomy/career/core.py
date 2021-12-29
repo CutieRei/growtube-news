@@ -104,7 +104,7 @@ class Career(commands.Cog):
             end_at = end_at.replace(tzinfo=timezone.utc)
             embed.add_field(
                 name="Current job session",
-                value=f"Ended at: <t:{int(end_at.timestamp())}:f>\nTime remaining: `{precisedelta(end_at-datetime.utcnow())}`",
+                value=f"Ended at: <t:{int(end_at.timestamp())}:f>\nTime remaining: `{precisedelta(end_at-datetime.now(timezone.utc))}`",
             )
         await ctx.send(embed=embed)
 
