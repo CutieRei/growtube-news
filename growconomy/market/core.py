@@ -119,8 +119,8 @@ class Market(commands.Cog):
 
     @commands.command(aliases=["inv"])
     async def inventory(self, ctx: GrowContext):
-        """
-        Get your inventory contents
+        """`exit
+        Get your inventory contents, TP stands for Total Price
         """
         records = await self.bot.pool.fetch(
             "SELECT items.name, inventory.quantity, items.demand, items.supply, items.stock, items.value FROM inventory INNER JOIN items ON inventory.item_id=items.id WHERE user_id=$1 ORDER BY inventory.quantity DESC",
@@ -134,9 +134,7 @@ class Market(commands.Cog):
                 * record[1]
             )
             summed.append(price)
-            items.append(
-                f"{record[0].title()}: {record[1]:,} | Estimated Value: {price:,}"
-            )
+            items.append(f"TP: {price:<10,} | Q: {record[1]:<6,} | {record[0].title()}")
         if summed:
             items.append(f"\nEstimated Total Values: {sum(summed):,}")
         records = "\n".join(items) or "Empty...."
@@ -156,20 +154,20 @@ class Market(commands.Cog):
         """
         quantity: Union[int, Literal["all"]] = quantity
         if quantity != "all" and quantity <= 0:
-            return
+            raise MessagedError("Invalid value for quantity")
         record = await self.bot.pool.fetchrow(
             "SELECT inventory.item_id, inventory.quantity, items.value, items.name, items.supply, items.demand, items.stock FROM inventory INNER JOIN items ON items.id = inventory.item_id WHERE LOWER(items.name) = $1 AND user_id = $2",
             item_name.lower(),
             ctx.author.id,
         )
         if record is None:
-            return
+            raise MessagedError("You don't have this item")
         value = record[2]
         if quantity == "all":
             quantity = record[1]
         remaining = record[1] - quantity
         if remaining < 0:
-            return
+            raise MessagedError("Quantity to be sold is bigger than actual quantity")
         currency = _calculate_price(value, record[5], record[4], 0, record[6])
         if currency < 0:
             currency = 0
@@ -228,28 +226,30 @@ class Market(commands.Cog):
         Buys an item from the market excluding non buyable
         """
         if quantity <= 0:
-            return
+            raise MessagedError("Quantity is less than 0")
         record = await self.bot.pool.fetchrow(
             "SELECT items.id, items.value, items.name, items.supply, items.demand, items.stock FROM items WHERE LOWER(items.name) = $1 AND buyable",
             item_name.lower(),
         )
         if record is None:
-            return
+            raise MessagedError("Item not found")
         if record[5] == 0:
-            return await ctx.reply("Stock is empty....")
+            raise MessagedError("Stock is empty....")
         currency = await self.bot.pool.fetchval(
             "SELECT currency FROM users WHERE id = $1", ctx.author.id
         )
         if record is None:
-            return
+            raise MessagedError("You don't have this item")
         value = record[1]
         price = _calculate_price(value, record[4], record[3], 0, record[5])
         if price < 0:
             price = 1
         price_total, tax = compute_transaction(price * quantity)
         remaining = currency - price_total
-        if remaining < 0 or (record[5] - quantity) < 0:
-            return
+        if remaining < 0:
+            raise MessagedError(f"You dont have enough {currency_name}")
+        elif (record[5] - quantity) < 0:
+            raise MessagedError("Quantity is bigger than available stock")
         async with self.bot.pool.acquire() as conn:
             async with conn.transaction():
                 if await conn.fetchval(
@@ -315,7 +315,6 @@ class Market(commands.Cog):
 
     @commands.command()
     async def top(self, ctx: GrowContext, limit: Optional[int] = 10):
-
         """
         List top [limit] users with the highest amount of currency
         """

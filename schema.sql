@@ -22,7 +22,7 @@ CREATE TABLE "users" (
 "id" BIGINT NOT NULL UNIQUE PRIMARY KEY,
 "currency" BIGINT NOT NULL,
 "career" BIGINT,
-"time_remaining" BIGINT,
+"started_at" TIMESTAMP,
 "position" BIGINT);
 
 CREATE TABLE "careers" (
