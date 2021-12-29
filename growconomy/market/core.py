@@ -9,11 +9,13 @@ from ..trading import Trading
 import discord
 import json
 
+big_tax = 3
+small_tax = 2
 
 def compute_transaction(amount: int):
     if amount > 100000:
-        return int(amount + (amount * 0.03)), 3
-    return int(amount + (amount * 0.02)), 2
+        return int(amount + (amount * big_tax//100)), big_tax
+    return int(amount + (amount * small_tax//100)), small_tax
 
 
 def _quantity_convert(arg) -> Union[int, Literal["all"]]:
@@ -216,7 +218,7 @@ class Market(commands.Cog):
                         ctx.author.id,
                     )
             await ctx.send(
-                f"Sold **{quantity}** {record[3]} for **{currency:,} {currency_name}** {currency_emoji} with {tax}% tax"
+                f"Sold **{quantity:,}** {record[3]} for **{currency:,} {currency_name}** {currency_emoji} with {tax}% tax"
             )
 
     @commands.command()
@@ -296,7 +298,7 @@ class Market(commands.Cog):
                     ctx.author.id,
                 )
             await ctx.send(
-                f"Bought **{quantity}** {record[2]} for **{price_total:,} {currency_name}** {currency_emoji} with {tax}% tax"
+                f"Bought **{quantity:,}** {record[2]} for **{price_total:,} {currency_name}** {currency_emoji} with {tax}% tax"
             )
 
     @commands.command(aliases=["mkt", "ma"])
