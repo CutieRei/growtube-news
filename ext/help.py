@@ -11,6 +11,9 @@ class Help(commands.HelpCommand):
 
     command: str
 
+    def __init__(self, **options):
+        super().__init__(verify_checks=True, aliases=["halp"], **options)
+
     async def prepare_help_command(self, ctx, command):
         self.command = command
 
