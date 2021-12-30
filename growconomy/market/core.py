@@ -61,6 +61,8 @@ class Market(commands.Cog):
             if ctx.command == self.register:
                 raise MessagedError("You're already registered")
             return True
+        elif ctx.command == self.register:
+            return True
         raise MessagedError("You're not registered")
 
     @commands.group(invoke_without_command=True)
