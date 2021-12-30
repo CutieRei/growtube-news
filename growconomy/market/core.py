@@ -51,7 +51,7 @@ class Market(commands.Cog):
         self.news: Optional[str] = None
 
     async def cog_check(self, ctx: GrowContext):
-        _ignored_cmd = {self.register, self.market}
+        _ignored_cmd = {self.market, self.top, self.news}
         if ctx.command in _ignored_cmd:
             return True
         elif await self.bot.pool.fetchval(
