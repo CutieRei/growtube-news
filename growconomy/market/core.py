@@ -12,10 +12,11 @@ import json
 big_tax = 3
 small_tax = 2
 
+
 def compute_transaction(amount: int):
     if amount > 100000:
-        return int(amount + (amount * big_tax//100)), big_tax
-    return int(amount + (amount * small_tax//100)), small_tax
+        return int(amount + (amount * big_tax // 100)), big_tax
+    return int(amount + (amount * small_tax // 100)), small_tax
 
 
 def _quantity_convert(arg) -> Union[int, Literal["all"]]:
@@ -61,11 +62,11 @@ class Market(commands.Cog):
                 raise MessagedError("You're already registered")
             return True
         raise MessagedError("You're not registered")
-    
+
     @commands.group(invoke_without_command=True)
     async def news(self, ctx: GrowContext):
         await ctx.reply(self.news or "No news")
-    
+
     @news.command()
     @commands.is_owner()
     async def set(self, ctx: GrowTube, *, content: str):

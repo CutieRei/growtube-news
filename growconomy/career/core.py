@@ -7,18 +7,22 @@ from bot import GrowContext, GrowTube, MessagedError
 from growconomy.constants import currency_name, embed_color, currency_emoji
 from growconomy.views import ConfirmView
 from humanize import precisedelta
+from typing import Optional
 import asyncio
 
 
 def _is_working(reversed: bool = False):
     async def _wrapped(ctx: GrowContext):
-        if await ctx.bot.pool.fetchval("SELECT started_at FROM users WHERE id = $1", ctx.author.id):
+        if await ctx.bot.pool.fetchval(
+            "SELECT started_at FROM users WHERE id = $1", ctx.author.id
+        ):
             if reversed:
                 raise MessagedError("You're already working")
             return True
         if reversed:
             return True
         raise MessagedError("You're not currently working")
+
     return _wrapped
 
 
@@ -67,18 +71,38 @@ class Career(commands.Cog):
     @career.command(name="list")
     async def _list(self, ctx: GrowContext):
         careers = await self.bot.pool.fetch(
-            "SELECT careers.id, careers.name, COUNT(positions.id) AS positions FROM careers JOIN positions ON careers.id = positions.career GROUP BY careers.id"
+            "SELECT careers.id, careers.name, COUNT(positions.id) AS positions FROM careers JOIN positions ON careers.id = positions.career GROUP BY careers.id ORDER BY careers.name ASC"
         )
         embed = Embed(
             title="List of careers",
-            description="\n".join(
-                f"**{i[1]}** with **{i[2]}** positions, id: {i[0]}"
-                for i in careers
-                if i[2]
-            ),
+            description="\n".join(f"`ID: {i[0]:<5} | {i[1]}`" for i in careers if i[2]),
             color=embed_color,
         )
         return await ctx.reply(embed=embed)
+
+    @career.command()
+    async def search(
+        self, ctx: GrowContext, limit: Optional[int] = 10, *, keyword: str
+    ):
+        limit = limit if limit <= 30 else 30
+        result = await self.bot.pool.fetch(
+            "SELECT id, name FROM careers WHERE LOWER(name) LIKE $1 ORDER BY name ASC LIMIT $2",
+            f"%{keyword.lower()}%",
+            limit,
+        )
+        if not result:
+            return await ctx.reply(f"No career field with the keyword of `{keyword}`")
+        embed = Embed(
+            title=f"Result for {keyword}",
+            description="\n".join(f"`ID: {id:<5} | {name}`" for id, name in result),
+            timestamp=utcnow(),
+            color=embed_color,
+        ).set_footer(
+            text=f"Requested by {ctx.author.display_name}",
+            icon_url=ctx.author.display_avatar,
+        )
+
+        await ctx.reply(embed=embed)
 
     @career.command()
     async def info(self, ctx: GrowContext, user: User = None):
@@ -108,7 +132,9 @@ class Career(commands.Cog):
         if u_started_at is not None:
             end_at: datetime = u_started_at + timedelta(seconds=pos_duration)
             end_at = end_at.replace(tzinfo=timezone.utc)
-            percentage = (datetime.utcnow() - u_started_at).total_seconds() / pos_duration
+            percentage = (
+                datetime.utcnow() - u_started_at
+            ).total_seconds() / pos_duration
             currency = round(pos_pay * percentage)
             embed.add_field(
                 name="Current job session",
