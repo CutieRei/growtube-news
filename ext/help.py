@@ -38,11 +38,11 @@ class Help(commands.HelpCommand):
             timestamp=discord.utils.utcnow(),
         )
         for cog, _commands in mapping.items():
-            if await self.filter_commands(_commands):
+            if cmds := await self.filter_commands(_commands):
                 cog = "Uncategorized" if cog is None else cog.qualified_name
                 embed.add_field(
                     name=f"**{cog}**",
-                    value="```\n{}\n```".format(", ".join(i.name for i in _commands)),
+                    value="```\n{}\n```".format(", ".join(i.name for i in cmds)),
                 )
         await self.get_destination().send(embed=embed)
 
