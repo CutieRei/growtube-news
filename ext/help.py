@@ -105,5 +105,5 @@ class Help(commands.HelpCommand):
 
 
 def setup(bot: GrowTube) -> None:
-    bot.help_command = Help(verify_checks=True, aliases=["halp"])
+    bot.help_command = Help(command_attrs={"verify_checks": True, "aliases": ["halp"]})
     bot.log.info(f"Loaded {__file__}")
