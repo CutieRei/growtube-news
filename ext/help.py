@@ -11,9 +11,6 @@ class Help(commands.HelpCommand):
 
     command: str
 
-    def __init__(self, **options):
-        super().__init__(verify_checks=True, aliases=["halp"], **options)
-
     async def prepare_help_command(self, ctx, command):
         self.command = command
 
@@ -108,5 +105,5 @@ class Help(commands.HelpCommand):
 
 
 def setup(bot: GrowTube) -> None:
-    bot.help_command = Help()
+    bot.help_command = Help(verify_checks=True, aliases=["halp"])
     bot.log.info(f"Loaded {__file__}")
