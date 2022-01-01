@@ -157,6 +157,7 @@ class Market(commands.Cog):
 
     @commands.command()
     @commands.check(_trade_check)
+    @commands.cooldown(15, 21600, commands.BucketType)
     async def sell(
         self,
         ctx: GrowContext,
@@ -166,6 +167,8 @@ class Market(commands.Cog):
     ):
         """
         Sells any item excluding non buyable
+
+        15 uses per 6 hours (sorry)
         """
         quantity: Union[int, Literal["all"]] = quantity
         if quantity != "all" and quantity <= 0:
@@ -236,10 +239,14 @@ class Market(commands.Cog):
 
     @commands.command()
     @commands.check(_trade_check)
+    @commands.cooldown(15, 21600, commands.BucketType)
     async def buy(self, ctx: GrowContext, quantity: Optional[int] = 1, *, item_name):
         """
         Buys an item from the market excluding non buyable
+
+        15 uses per 6 hours (sorry)
         """
+        quantity = quantity if quantity <= 100 else 100
         if quantity <= 0:
             raise MessagedError("Quantity is less than 0")
         record = await self.bot.pool.fetchrow(
@@ -338,7 +345,7 @@ class Market(commands.Cog):
             limit = 30
 
         items = await self.bot.pool.fetch(
-            "SELECT id, currency FROM users ORDER BY currency DESC LIMIT $1", limit
+            "SELECT id, currency FROM users WHERE id != 0 ORDER BY currency DESC LIMIT $1", limit
         )
         await ctx.reply(
             embed=discord.Embed(
